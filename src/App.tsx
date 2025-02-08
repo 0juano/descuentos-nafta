@@ -1,5 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Filter, CreditCard, Calendar, Clock, DollarSign, Percent, ChevronDown, X, ArrowUpDown, Search, Plus, Link } from 'lucide-react';
+import Filter from 'lucide-react/dist/esm/icons/filter';
+import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
+import Calendar from 'lucide-react/dist/esm/icons/calendar';
+import Clock from 'lucide-react/dist/esm/icons/clock';
+import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
+import Percent from 'lucide-react/dist/esm/icons/percent';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import X from 'lucide-react/dist/esm/icons/x';
+import ArrowUpDown from 'lucide-react/dist/esm/icons/arrow-up-down';
+import Search from 'lucide-react/dist/esm/icons/search';
+import Plus from 'lucide-react/dist/esm/icons/plus';
+import Link from 'lucide-react/dist/esm/icons/link';
 import { supabase } from './lib/supabase';
 import type { Discount, FuelBrand } from './types';
 
@@ -7,7 +18,7 @@ type SortField = 'discount' | 'reimbursement_limit' | 'fuel_brand' | 'day' | nul
 type SortDirection = 'asc' | 'desc';
 
 interface RecommendFormData {
-  fuel_brand: string;
+  fuel_brand: string[];
   day: string[];
   card_method: string;
   discount: string;
@@ -28,8 +39,10 @@ function App() {
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const [recommendFormData, setRecommendFormData] = useState<RecommendFormData>({
-    fuel_brand: '',
+    fuel_brand: [],
     day: [],
     card_method: '',
     discount: '',
@@ -43,8 +56,33 @@ function App() {
   const dayDropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  const recommendBrandDropdownRef = useRef<HTMLDivElement>(null);
+
   const brands = ['YPF', 'SHELL', 'AXION', 'Multiple'];
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Every day'];
+
+  const [recommendBrandDropdownOpen, setRecommendBrandDropdownOpen] = useState(false);
+
+  // Add state for recommend day dropdown
+  const [recommendDayDropdownOpen, setRecommendDayDropdownOpen] = useState(false);
+  const recommendDayDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Add abbreviation mapping
+  const dayAbbreviations: Record<string, string> = {
+    'Monday': 'Mon',
+    'Tuesday': 'Tue',
+    'Wednesday': 'Wed',
+    'Thursday': 'Thu',
+    'Friday': 'Fri',
+    'Saturday': 'Sat',
+    'Sunday': 'Sun',
+    'Every day': 'Every day'
+  };
+
+  // Add helper function to abbreviate days
+  const getAbbreviatedDay = (day: string): string => {
+    return dayAbbreviations[day] || day;
+  };
 
   const getDiscountBadgeStyle = (percentage: number): string => {
     if (percentage > 20) {
@@ -64,6 +102,9 @@ function App() {
     return 'bg-blue-100 text-blue-800 ring-1 ring-blue-600/20';
   };
 
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const mobileFilterRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (brandDropdownRef.current && !brandDropdownRef.current.contains(event.target as Node)) {
@@ -72,8 +113,17 @@ function App() {
       if (dayDropdownRef.current && !dayDropdownRef.current.contains(event.target as Node)) {
         setDayDropdownOpen(false);
       }
+      if (mobileFilterRef.current && !mobileFilterRef.current.contains(event.target as Node)) {
+        setMobileFilterOpen(false);
+      }
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         setIsRecommendModalOpen(false);
+      }
+      if (recommendBrandDropdownRef.current && !recommendBrandDropdownRef.current.contains(event.target as Node)) {
+        setRecommendBrandDropdownOpen(false);
+      }
+      if (recommendDayDropdownRef.current && !recommendDayDropdownRef.current.contains(event.target as Node)) {
+        setRecommendDayDropdownOpen(false);
       }
     }
 
@@ -100,7 +150,7 @@ function App() {
   const toggleRecommendDay = (day: string) => {
     setRecommendFormData(prev => {
       const newDays = prev.day.includes(day)
-        ? prev.day.filter(d => d !== day)
+        ? prev.day.filter((d: string) => d !== day)
         : [...prev.day, day];
       
       // If "Every day" is selected, clear other selections
@@ -141,7 +191,7 @@ function App() {
         filteredData = filteredData.filter(discount => {
           const discountDays = discount.day.split(' & ');
           return selectedDays.some(selectedDay => 
-            discountDays.some(day => day.toLowerCase().includes(selectedDay.toLowerCase())) ||
+            discountDays.some((day: string) => day.toLowerCase().includes(selectedDay.toLowerCase())) ||
             (discount.day === 'Every day' && selectedDays.includes('Every day'))
           );
         });
@@ -206,7 +256,7 @@ function App() {
     return colors[brand] || 'from-blue-600 to-blue-700';
   };
 
-  const toggleBrand = (brand: string, event: React.MouseEvent) => {
+  const toggleBrand = (brand: string, event: React.SyntheticEvent) => {
     event.stopPropagation();
     setSelectedBrands(prev => 
       prev.includes(brand) 
@@ -215,7 +265,7 @@ function App() {
     );
   };
 
-  const toggleDay = (day: string, event: React.MouseEvent) => {
+  const toggleDay = (day: string, event: React.SyntheticEvent) => {
     event.stopPropagation();
     setSelectedDays(prev => 
       prev.includes(day) 
@@ -238,7 +288,7 @@ function App() {
     e.preventDefault();
     setSubmitStatus('idle');
 
-    if (!recommendFormData.fuel_brand || !recommendFormData.card_method || !recommendFormData.discount || recommendFormData.day.length === 0) {
+    if (recommendFormData.fuel_brand.length === 0 || !recommendFormData.card_method || !recommendFormData.discount || recommendFormData.day.length === 0) {
       alert('Please fill in all required fields and select at least one day');
       return;
     }
@@ -253,7 +303,7 @@ function App() {
         setIsRecommendModalOpen(false);
         setSubmitStatus('idle');
         setRecommendFormData({
-          fuel_brand: '',
+          fuel_brand: [],
           day: [],
           card_method: '',
           discount: '',
@@ -267,6 +317,59 @@ function App() {
       setSubmitStatus('error');
     }
   };
+
+  const toggleRecommendBrand = (brand: string) => {
+    setRecommendFormData(prev => {
+      const newBrands = prev.fuel_brand.includes(brand)
+        ? prev.fuel_brand.filter(b => b !== brand)
+        : [...prev.fuel_brand, brand];
+      return { ...prev, fuel_brand: newBrands };
+    });
+  };
+
+  // Add ESC key handler
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isRecommendModalOpen) {
+        setIsRecommendModalOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isRecommendModalOpen]);
+
+  // Add scroll handler
+  useEffect(() => {
+    const controlSearchBar = () => {
+      if (typeof window !== 'undefined') {
+        const currentScrollY = window.scrollY;
+        
+        // Only hide on mobile screens
+        if (window.innerWidth <= 640) {
+          if (currentScrollY > 50) {
+            setShowSearch(false);
+          } else {
+            setShowSearch(true);
+          }
+        } else {
+          setShowSearch(true); // Always show on desktop
+        }
+        
+        setLastScrollY(currentScrollY);
+      }
+    };
+
+    window.addEventListener('scroll', controlSearchBar);
+    window.addEventListener('resize', controlSearchBar);
+
+    return () => {
+      window.removeEventListener('scroll', controlSearchBar);
+      window.removeEventListener('resize', controlSearchBar);
+    };
+  }, [lastScrollY]);
 
   if (error) {
     return (
@@ -297,123 +400,177 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6 sticky top-[73px] z-10 backdrop-blur-sm bg-white/95">
-          <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+        <div className={`bg-white p-2 sm:p-4 rounded-lg shadow-sm mb-6 sticky top-[73px] z-10 backdrop-blur-sm bg-white/95 transition-all duration-300 transform
+          ${!showSearch ? 'sm:opacity-100 sm:translate-y-0 opacity-0 -translate-y-full pointer-events-none sm:pointer-events-auto' : 'opacity-100 translate-y-0'}`}>
+          {/* Mobile layout */}
+          <div className="flex flex-row items-center gap-2 sm:hidden">
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    fetchDiscounts();
+                  }}
+                  placeholder="Search..."
+                  className="block w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                />
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  fetchDiscounts();
-                }}
-                placeholder="Search discounts, cards, brands..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
+            </div>
+
+            <div className="relative" ref={mobileFilterRef}>
+              <button
+                onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+                className="inline-flex items-center px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <Filter className="h-4 w-4 text-gray-400" />
+                <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
+              </button>
+
+              {mobileFilterOpen && (
+                <div className="absolute right-0 mt-1 w-72 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Brands</label>
+                      <div className="space-y-2">
+                        {brands.map(brand => (
+                          <label key={brand} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedBrands.includes(brand)}
+                              onChange={(e) => toggleBrand(brand, e)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Days</label>
+                      <div className="space-y-2">
+                        {days.map(day => (
+                          <label key={day} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedDays.includes(day)}
+                              onChange={(e) => toggleDay(day, e)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">{day}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">Filters:</span>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <div className="relative" ref={brandDropdownRef}>
-                <button
-                  onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                  className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <span className="truncate">
-                    {selectedBrands.length === 0 
-                      ? 'Select Brands' 
-                      : `${selectedBrands.length} brand${selectedBrands.length === 1 ? '' : 's'}`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </button>
-                {brandDropdownOpen && (
-                  <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                    <div className="p-2">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Select Brands</span>
-                        {selectedBrands.length > 0 && (
-                          <button
-                            onClick={(e) => clearBrands(e)}
-                            className="text-xs text-gray-500 hover:text-gray-700"
-                          >
-                            Clear all
-                          </button>
-                        )}
-                      </div>
-                      {brands.map(brand => (
-                        <label key={brand} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedBrands.includes(brand)}
-                            onChange={(e) => toggleBrand(brand, e)}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{brand}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* Desktop layout */}
+          <div className="hidden sm:block">
+            <div className="mb-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    fetchDiscounts();
+                  }}
+                  placeholder="Search discounts, cards, brands..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
               </div>
+            </div>
 
-              <div className="relative" ref={dayDropdownRef}>
-                <button
-                  onClick={() => setDayDropdownOpen(!dayDropdownOpen)}
-                  className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <span className="truncate">
-                    {selectedDays.length === 0 
-                      ? 'Select Days' 
-                      : `${selectedDays.length} day${selectedDays.length === 1 ? '' : 's'}`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </button>
-                {dayDropdownOpen && (
-                  <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                    <div className="p-2">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Select Days</span>
-                        {selectedDays.length > 0 && (
-                          <button
-                            onClick={(e) => clearDays(e)}
-                            className="text-xs text-gray-500 hover:text-gray-700"
-                          >
-                            Clear all
-                          </button>
-                        )}
+            <div className="flex flex-row items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-gray-400" />
+                <span className="text-sm font-medium text-gray-700">Filters:</span>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <div className="relative" ref={brandDropdownRef}>
+                  <button
+                    onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                    className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <span className="truncate">
+                      {selectedBrands.length === 0 
+                        ? 'Select Brands'
+                        : selectedBrands.join(', ')}
+                    </span>
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </button>
+                  {brandDropdownOpen && (
+                    <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                      <div className="p-2">
+                        {brands.map(brand => (
+                          <label key={brand} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedBrands.includes(brand)}
+                              onChange={(e) => toggleBrand(brand, e)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                          </label>
+                        ))}
                       </div>
-                      {days.map(day => (
-                        <label key={day} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedDays.includes(day)}
-                            onChange={(e) => toggleDay(day, e)}
-                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{day}</span>
-                        </label>
-                      ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                <div className="relative" ref={dayDropdownRef}>
+                  <button
+                    onClick={() => setDayDropdownOpen(!dayDropdownOpen)}
+                    className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <span className="truncate">
+                      {selectedDays.length === 0 
+                        ? 'Select Days'
+                        : selectedDays.map(day => getAbbreviatedDay(day)).join(', ')}
+                    </span>
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </button>
+                  {dayDropdownOpen && (
+                    <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                      <div className="p-2">
+                        {days.map(day => (
+                          <label key={day} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedDays.includes(day)}
+                              onChange={(e) => toggleDay(day, e)}
+                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">{day}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Selected filters tags */}
           {(selectedBrands.length > 0 || selectedDays.length > 0) && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-1 sm:gap-2">
               {selectedBrands.map(brand => (
                 <span
                   key={brand}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
                 >
                   {brand}
                   <button
@@ -430,9 +587,9 @@ function App() {
               {selectedDays.map(day => (
                 <span
                   key={day}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
                 >
-                  {day}
+                  {getAbbreviatedDay(day)}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -607,35 +764,103 @@ function App() {
                   <label className="block text-sm font-medium text-gray-700">
                     Fuel Brand *
                   </label>
-                  <select
-                    value={recommendFormData.fuel_brand}
-                    onChange={(e) => setRecommendFormData(prev => ({ ...prev, fuel_brand: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    required
-                  >
-                    <option value="">Select a brand</option>
-                    {brands.map(brand => (
-                      <option key={brand} value={brand}>{brand}</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={recommendBrandDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setRecommendBrandDropdownOpen(!recommendBrandDropdownOpen)}
+                      className="mt-1 relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <span className="block truncate">
+                        {recommendFormData.fuel_brand.length === 0 
+                          ? 'Select brands' 
+                          : recommendFormData.fuel_brand.join(', ')}
+                      </span>
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      </span>
+                    </button>
+                    
+                    {recommendBrandDropdownOpen && (
+                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                        <div className="p-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-gray-700">Select Brands</span>
+                            {recommendFormData.fuel_brand.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setRecommendFormData(prev => ({ ...prev, fuel_brand: [] }))}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                              >
+                                Clear all
+                              </button>
+                            )}
+                          </div>
+                          {brands.map(brand => (
+                            <label key={brand} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={recommendFormData.fuel_brand.includes(brand)}
+                                onChange={() => toggleRecommendBrand(brand)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Days *
                   </label>
-                  <div className="mt-2 space-y-2">
-                    {days.map(day => (
-                      <label key={day} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={recommendFormData.day.includes(day)}
-                          onChange={() => toggleRecommendDay(day)}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{day}</span>
-                      </label>
-                    ))}
+                  <div className="relative" ref={recommendDayDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setRecommendDayDropdownOpen(!recommendDayDropdownOpen)}
+                      className="mt-1 relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <span className="block truncate">
+                        {recommendFormData.day.length === 0 
+                          ? 'Select days' 
+                          : recommendFormData.day.map(day => getAbbreviatedDay(day)).join(', ')}
+                      </span>
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      </span>
+                    </button>
+                    
+                    {recommendDayDropdownOpen && (
+                      <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                        <div className="p-2">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-gray-700">Select Days</span>
+                            {recommendFormData.day.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setRecommendFormData(prev => ({ ...prev, day: [] }))}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                              >
+                                Clear all
+                              </button>
+                            )}
+                          </div>
+                          {days.map(day => (
+                            <label key={day} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={recommendFormData.day.includes(day)}
+                                onChange={() => toggleRecommendDay(day)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                              />
+                              <span className="ml-2 text-sm text-gray-700">{day}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -655,14 +880,14 @@ function App() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Discount ```jsx
+                    Discount *
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <input
                       type="text"
                       value={recommendFormData.discount}
                       onChange={(e) => handleDiscountChange(e.target.value)}
-                      className="block w-full pr-8 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="block w-full pr-8 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="e.g., 15"
                       required
                     />
@@ -684,7 +909,7 @@ function App() {
                       type="text"
                       value={formatNumber(recommendFormData.reimbursement_limit)}
                       onChange={(e) => handleReimbursementLimitChange(e.target.value)}
-                      className="block w-full pl-7 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="block w-full pl-7 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="e.g., 10,000"
                     />
                   </div>
@@ -715,11 +940,11 @@ function App() {
                       type="url"
                       value={recommendFormData.source_url}
                       onChange={(e) => setRecommendFormData(prev => ({ ...prev, source_url: e.target.value }))}
-                      className="block w-full pl-10 border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      className="block w-full pl-10 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="https://example.com/discount"
                     />
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500">
                     Share where you found this discount
                   </p>
                 </div>
@@ -733,9 +958,7 @@ function App() {
                         'bg-indigo-600 hover:bg-indigo-700'} 
                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
                   >
-                    {submitStatus === 'success' ? 'Submitted Successfully!' :
-                     submitStatus === 'error' ? 'Error Submitting' :
-                     'Submit Recommendation'}
+                    {submitStatus === 'success' ? 'Discount recommended successfully!' : submitStatus === 'error' ? 'Error recommending discount' : 'Recommend Discount'}
                   </button>
                 </div>
               </form>

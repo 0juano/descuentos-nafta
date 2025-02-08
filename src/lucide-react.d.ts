@@ -1,0 +1,12 @@
+declare module 'lucide-react/dist/esm/icons/filter';
+declare module 'lucide-react/dist/esm/icons/credit-card';
+declare module 'lucide-react/dist/esm/icons/calendar';
+declare module 'lucide-react/dist/esm/icons/clock';
+declare module 'lucide-react/dist/esm/icons/dollar-sign';
+declare module 'lucide-react/dist/esm/icons/percent';
+declare module 'lucide-react/dist/esm/icons/chevron-down';
+declare module 'lucide-react/dist/esm/icons/x';
+declare module 'lucide-react/dist/esm/icons/arrow-up-down';
+declare module 'lucide-react/dist/esm/icons/search';
+declare module 'lucide-react/dist/esm/icons/plus';
+declare module 'lucide-react/dist/esm/icons/link'; 
