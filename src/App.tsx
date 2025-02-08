@@ -323,10 +323,39 @@ function App() {
     }
 
     try {
-      console.log('Recommendation submitted:', {
-        ...recommendFormData,
-        day: recommendFormData.day.join(' & ')
+      // Log the data being sent
+      console.log('Sending data:', {
+        fuel_brand: recommendFormData.fuel_brand[0],
+        days: recommendFormData.day,
+        payment_method: recommendFormData.card_method,
+        discount_percentage: parseInt(recommendFormData.discount),
+        reimbursement_limit: parseInt(recommendFormData.reimbursement_limit.replace(/,/g, '')),
+        frequency: recommendFormData.frequency,
+        source_url: recommendFormData.source_url || null,
+        status: 'pending'
       });
+
+      const { data, error } = await supabase
+        .from('recommended_discounts')
+        .insert({
+          fuel_brand: recommendFormData.fuel_brand[0], // Taking first selected brand
+          days: recommendFormData.day,
+          payment_method: recommendFormData.card_method,
+          discount_percentage: parseInt(recommendFormData.discount),
+          reimbursement_limit: parseInt(recommendFormData.reimbursement_limit.replace(/,/g, '')),
+          frequency: recommendFormData.frequency,
+          source_url: recommendFormData.source_url || null,
+          status: 'pending'
+        })
+        .select();
+
+      if (error) {
+        console.error('Supabase error:', error);
+        alert(`Error submitting recommendation: ${error.message}`);
+        throw error;
+      }
+
+      console.log('Success! Data:', data);
       setSubmitStatus('success');
       setTimeout(() => {
         setIsRecommendModalOpen(false);
@@ -344,6 +373,12 @@ function App() {
     } catch (error) {
       console.error('Error submitting recommendation:', error);
       setSubmitStatus('error');
+      // Show error message to user
+      if (error instanceof Error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        alert('An unexpected error occurred while submitting the recommendation');
+      }
     }
   };
 

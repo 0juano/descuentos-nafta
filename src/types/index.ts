@@ -11,4 +11,18 @@ export interface Discount {
   updated_at?: string;
 }
 
+export interface RecommendedDiscount {
+  id: string;
+  fuel_brand: string;
+  days: string[];
+  payment_method: string;
+  discount_percentage: number;
+  reimbursement_limit: number;
+  frequency: string;
+  source_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at?: string;
+  updated_at?: string;
+}
+
 export type FuelBrand = 'YPF' | 'SHELL' | 'AXION' | 'Multiple';
