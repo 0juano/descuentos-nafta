@@ -139,8 +139,11 @@ function App() {
   };
 
   const handleReimbursementLimitChange = (value: string) => {
+    // Remove all non-numeric characters
     const numericValue = value.replace(/[^0-9]/g, '');
-    setRecommendFormData(prev => ({ ...prev, reimbursement_limit: numericValue }));
+    // Format with thousand separators
+    const formattedValue = numericValue ? parseInt(numericValue).toLocaleString() : '';
+    setRecommendFormData(prev => ({ ...prev, reimbursement_limit: formattedValue }));
   };
 
   const formatNumber = (value: string) => {
@@ -864,7 +867,7 @@ function App() {
                   </div>
                 </div>
 
-                <div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
                     Payment Method *
                   </label>
@@ -872,34 +875,32 @@ function App() {
                     type="text"
                     value={recommendFormData.card_method}
                     onChange={(e) => setRecommendFormData(prev => ({ ...prev, card_method: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="e.g., Visa Credit Card"
-                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Visa / Mastercard / Modo"
                   />
                 </div>
 
-                <div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Discount *
+                    Discount Percentage *
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <input
                       type="text"
                       value={recommendFormData.discount}
                       onChange={(e) => handleDiscountChange(e.target.value)}
-                      className="block w-full pr-8 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="e.g., 15"
-                      required
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Enter discount percentage"
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 sm:text-sm">%</span>
                     </div>
                   </div>
                 </div>
 
-                <div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Reimbursement Limit
+                    Reimbursement Limit *
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -907,46 +908,47 @@ function App() {
                     </div>
                     <input
                       type="text"
-                      value={formatNumber(recommendFormData.reimbursement_limit)}
+                      value={recommendFormData.reimbursement_limit}
                       onChange={(e) => handleReimbursementLimitChange(e.target.value)}
-                      className="block w-full pl-7 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="e.g., 10,000"
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Enter reimbursement limit"
                     />
                   </div>
                 </div>
 
-                <div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Frequency
+                    Frequency *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={recommendFormData.frequency}
                     onChange={(e) => setRecommendFormData(prev => ({ ...prev, frequency: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="e.g., Monthly"
-                  />
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                  >
+                    <option value="">Select frequency</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
                 </div>
 
-                <div>
+                <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
                     Source URL
                   </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Link className="h-4 w-4 text-gray-400" />
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <div className="relative flex items-stretch flex-grow focus-within:z-10">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Link className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={recommendFormData.source_url}
+                        onChange={(e) => setRecommendFormData(prev => ({ ...prev, source_url: e.target.value }))}
+                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        placeholder="https://example.com"
+                      />
                     </div>
-                    <input
-                      type="url"
-                      value={recommendFormData.source_url}
-                      onChange={(e) => setRecommendFormData(prev => ({ ...prev, source_url: e.target.value }))}
-                      className="block w-full pl-10 rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="https://example.com/discount"
-                    />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Share where you found this discount
-                  </p>
                 </div>
 
                 <div className="mt-6">
