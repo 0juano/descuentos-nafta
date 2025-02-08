@@ -172,59 +172,65 @@ function App() {
 
   useEffect(() => {
     fetchDiscounts();
-  }, [selectedBrands, selectedDays, sortField, sortDirection]);
+  }, [selectedBrands, selectedDays, sortField, sortDirection, searchQuery]);
 
   async function fetchDiscounts() {
     try {
       setLoading(true);
       setError(null);
-      let query = supabase.from('discounts').select('*');
-      
+
+      // Build the data query
+      let query = supabase
+        .from('discounts')
+        .select('*');
+
+      // Apply brand filter
       if (selectedBrands.length > 0) {
         query = query.in('fuel_brand', selectedBrands);
       }
 
+      // Apply day filter
+      if (selectedDays.length > 0) {
+        const dayConditions = selectedDays.map(day => {
+          if (day === 'Every day') {
+            return `day.ilike.%${day}%`;
+          }
+          return `day.ilike.%${day}%`;
+        });
+        query = query.or(dayConditions.join(','));
+      }
+
+      // Apply search query if present
+      if (searchQuery.trim()) {
+        const searchTerm = searchQuery.toLowerCase().trim();
+        // Create a search filter that looks in all relevant fields
+        query = query.or(
+          `card_method.ilike.%${searchTerm}%,` +
+          `frequency.ilike.%${searchTerm}%`
+        );
+        
+        // If no brand filter is active, also search in fuel_brand
+        if (selectedBrands.length === 0) {
+          query = query.or(`fuel_brand.ilike.%${searchTerm}%`);
+        }
+        
+        // If no day filter is active, also search in day
+        if (selectedDays.length === 0) {
+          query = query.or(`day.ilike.%${searchTerm}%`);
+        }
+      }
+
+      // Apply sorting
+      if (sortField) {
+        query = query.order(sortField, { ascending: sortDirection === 'asc' });
+      }
+
+      // Execute the query
       const { data, error } = await query;
       
       if (error) throw error;
 
-      let filteredData = data || [];
-      
-      if (selectedDays.length > 0) {
-        filteredData = filteredData.filter(discount => {
-          const discountDays = discount.day.split(' & ');
-          return selectedDays.some(selectedDay => 
-            discountDays.some((day: string) => day.toLowerCase().includes(selectedDay.toLowerCase())) ||
-            (discount.day === 'Every day' && selectedDays.includes('Every day'))
-          );
-        });
-      }
-
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        filteredData = filteredData.filter(discount => 
-          discount.fuel_brand.toLowerCase().includes(query) ||
-          discount.day.toLowerCase().includes(query) ||
-          discount.card_method.toLowerCase().includes(query) ||
-          discount.frequency.toLowerCase().includes(query) ||
-          discount.discount.toString().includes(query) ||
-          discount.reimbursement_limit.toString().includes(query)
-        );
-      }
-
-      if (sortField) {
-        filteredData.sort((a, b) => {
-          let comparison = 0;
-          if (sortField === 'discount' || sortField === 'reimbursement_limit') {
-            comparison = a[sortField] - b[sortField];
-          } else {
-            comparison = String(a[sortField]).localeCompare(String(b[sortField]));
-          }
-          return sortDirection === 'asc' ? comparison : -comparison;
-        });
-      }
-      
-      setDiscounts(filteredData);
+      setDiscounts(data || []);
     } catch (error) {
       console.error('Error fetching discounts:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch discounts');
@@ -259,32 +265,33 @@ function App() {
     return colors[brand] || 'from-blue-600 to-blue-700';
   };
 
-  const toggleBrand = (brand: string, event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    setSelectedBrands(prev => 
-      prev.includes(brand) 
+  const handleBrandSelect = (brand: string) => {
+    setSelectedBrands(prev => {
+      const newBrands = prev.includes(brand)
         ? prev.filter(b => b !== brand)
-        : [...prev, brand]
-    );
+        : [...prev, brand];
+      return newBrands;
+    });
   };
 
-  const toggleDay = (day: string, event: React.SyntheticEvent) => {
-    event.stopPropagation();
-    setSelectedDays(prev => 
-      prev.includes(day) 
-        ? prev.filter(d => d !== day)
-        : [...prev, day]
-    );
+  const handleDaySelect = (day: string) => {
+    setSelectedDays(prev => {
+      let newDays;
+      if (day === 'Every day') {
+        newDays = prev.includes(day) ? [] : ['Every day'];
+      } else {
+        newDays = prev.includes(day)
+          ? prev.filter(d => d !== day)
+          : prev.includes('Every day')
+          ? [day]
+          : [...prev, day];
+      }
+      return newDays;
+    });
   };
 
-  const clearBrands = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedBrands([]);
-  };
-
-  const clearDays = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedDays([]);
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
   };
 
   const handleRecommendSubmit = async (e: React.FormEvent) => {
@@ -445,7 +452,7 @@ function App() {
                             <input
                               type="checkbox"
                               checked={selectedBrands.includes(brand)}
-                              onChange={(e) => toggleBrand(brand, e)}
+                              onChange={(e) => handleBrandSelect(brand)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
                             <span className="ml-2 text-sm text-gray-700">{brand}</span>
@@ -462,7 +469,7 @@ function App() {
                             <input
                               type="checkbox"
                               checked={selectedDays.includes(day)}
-                              onChange={(e) => toggleDay(day, e)}
+                              onChange={(e) => handleDaySelect(day)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
                             <span className="ml-2 text-sm text-gray-700">{day}</span>
@@ -522,7 +529,7 @@ function App() {
                             <input
                               type="checkbox"
                               checked={selectedBrands.includes(brand)}
-                              onChange={(e) => toggleBrand(brand, e)}
+                              onChange={(e) => handleBrandSelect(brand)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
                             <span className="ml-2 text-sm text-gray-700">{brand}</span>
@@ -553,7 +560,7 @@ function App() {
                             <input
                               type="checkbox"
                               checked={selectedDays.includes(day)}
-                              onChange={(e) => toggleDay(day, e)}
+                              onChange={(e) => handleDaySelect(day)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
                             <span className="ml-2 text-sm text-gray-700">{day}</span>
@@ -579,7 +586,7 @@ function App() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleBrand(brand, e);
+                      handleBrandSelect(brand);
                     }}
                     className="ml-1 inline-flex items-center"
                   >
@@ -596,7 +603,7 @@ function App() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleDay(day, e);
+                      handleDaySelect(day);
                     }}
                     className="ml-1 inline-flex items-center"
                   >
