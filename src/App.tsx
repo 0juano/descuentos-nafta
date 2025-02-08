@@ -11,6 +11,9 @@ import ArrowUpDown from 'lucide-react/dist/esm/icons/arrow-up-down';
 import Search from 'lucide-react/dist/esm/icons/search';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import Link from 'lucide-react/dist/esm/icons/link';
+import ypfLogo from './icons/ypf.svg';
+import shellLogo from './icons/shell.png';
+import axionLogo from './icons/axion.webp';
 import { supabase } from './lib/supabase';
 import type { Discount, FuelBrand } from './types';
 
@@ -255,14 +258,30 @@ function App() {
     return <ArrowUpDown className={`h-4 w-4 ${sortDirection === 'asc' ? 'text-blue-600 rotate-180' : 'text-blue-600'}`} />;
   };
 
+  const getBrandIcon = (brand: string) => {
+    switch (brand.toUpperCase()) {
+      case 'YPF':
+        return <img src={ypfLogo} alt="YPF" className="inline-block mr-2 h-5 w-5 object-contain" />;
+      case 'SHELL':
+        return <img src={shellLogo} alt="Shell" className="inline-block mr-2 h-5 w-5 object-contain" />;
+      case 'AXION':
+        return <img src={axionLogo} alt="Axion" className="inline-block mr-2 h-5 w-5 object-contain" />;
+      default:
+        return null;
+    }
+  };
+
   const getBrandColor = (brand: string): string => {
-    const colors: Record<string, string> = {
-      'YPF': 'from-green-600 to-green-700',
-      'SHELL': 'from-yellow-500 to-yellow-600',
-      'AXION': 'from-purple-600 to-purple-700',
-      'Multiple': 'from-blue-600 to-blue-700'
-    };
-    return colors[brand] || 'from-blue-600 to-blue-700';
+    switch (brand.toUpperCase()) {
+      case 'YPF':
+        return 'bg-blue-100 text-blue-800 ring-1 ring-blue-600/20';
+      case 'SHELL':
+        return 'bg-red-100 text-red-800 ring-1 ring-red-600/20';
+      case 'AXION':
+        return 'bg-purple-100 text-purple-800 ring-1 ring-purple-600/20';
+      default:
+        return 'bg-gray-100 text-gray-800 ring-1 ring-gray-600/20';
+    }
   };
 
   const handleBrandSelect = (brand: string) => {
@@ -455,7 +474,10 @@ function App() {
                               onChange={(e) => handleBrandSelect(brand)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
-                            <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                            <span className="ml-2 text-sm text-gray-700 flex items-center">
+                              {getBrandIcon(brand)}
+                              {brand}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -532,7 +554,10 @@ function App() {
                               onChange={(e) => handleBrandSelect(brand)}
                               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                             />
-                            <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                            <span className="ml-2 text-sm text-gray-700 flex items-center">
+                              {getBrandIcon(brand)}
+                              {brand}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -674,7 +699,10 @@ function App() {
                     {discounts.map((discount) => (
                       <tr key={discount.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900">{discount.fuel_brand}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {getBrandIcon(discount.fuel_brand)}
+                            {discount.fuel_brand}
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-500">{discount.day}</span>
@@ -711,8 +739,11 @@ function App() {
                   <div className={`bg-gradient-to-r ${getBrandColor(discount.fuel_brand)} p-4`}>
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-bold text-white">{discount.fuel_brand}</h3>
-                        <p className="text-white/90 text-sm mt-1">{discount.day}</p>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {getBrandIcon(discount.fuel_brand)}
+                          {discount.fuel_brand}
+                        </h3>
+                        <p className="text-gray-700 text-sm mt-1">{discount.day}</p>
                       </div>
                       <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.discount)}`}>
                         <span className="text-lg font-bold">{discount.discount}%</span>
@@ -813,7 +844,10 @@ function App() {
                                 onChange={() => toggleRecommendBrand(brand)}
                                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                               />
-                              <span className="ml-2 text-sm text-gray-700">{brand}</span>
+                              <span className="ml-2 text-sm text-gray-700 flex items-center">
+                                {getBrandIcon(brand)}
+                                {brand}
+                              </span>
                             </label>
                           ))}
                         </div>
