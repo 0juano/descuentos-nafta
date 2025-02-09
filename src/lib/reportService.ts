@@ -34,7 +34,7 @@ export const reportService = {
         }]);
 
       if (error) {
-        if (error.message.includes('pending report already exists')) {
+        if (error.message?.includes('pending report already exists')) {
           throw new Error('A report for this discount is already pending review.');
         }
         throw error;

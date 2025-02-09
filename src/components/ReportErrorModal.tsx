@@ -107,6 +107,12 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       return;
     }
 
+    // Validate suggested days if days_error is checked
+    if (formData.days_error && (!formData.suggested_days || formData.suggested_days.length === 0)) {
+      setError('Please select at least one correct day');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await onSubmit(formData);
@@ -165,7 +171,8 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                     checked={formData.days_error}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      days_error: e.target.checked
+                      days_error: e.target.checked,
+                      suggested_days: e.target.checked ? [] : prev.suggested_days
                     }))}
                     disabled={formData.is_discontinued}
                     className="rounded border-gray-300"
@@ -224,11 +231,11 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                       <label key={day} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          checked={formData.suggested_days.includes(day)}
+                          checked={formData.suggested_days?.includes(day) || false}
                           onChange={(e) => {
                             const newDays = e.target.checked
-                              ? [...formData.suggested_days, day]
-                              : formData.suggested_days.filter(d => d !== day);
+                              ? [...(formData.suggested_days || []), day]
+                              : (formData.suggested_days || []).filter(d => d !== day);
                             setFormData(prev => ({
                               ...prev,
                               suggested_days: newDays
