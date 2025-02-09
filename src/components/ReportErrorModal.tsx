@@ -45,7 +45,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const frequencies = ['Weekly', 'Monthly', 'Quarterly', 'Yearly', 'One-time'];
+  const frequencies = ['Weekly', 'Monthly'];
 
   // Add escape key handler
   useEffect(() => {
@@ -113,6 +113,18 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       return;
     }
 
+    // Validate discount percentage doesn't exceed 100%
+    if (formData.discount_error && formData.suggested_discount !== undefined) {
+      if (formData.suggested_discount > 100) {
+        setError('Discount percentage cannot exceed 100%');
+        return;
+      }
+      if (formData.suggested_discount < 0) {
+        setError('Discount percentage cannot be negative');
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       await onSubmit(formData);
@@ -133,102 +145,70 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
     >
       <div 
         ref={modalRef}
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-md w-full"
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Report Discount Error</h2>
+            <h2 className="text-xl">Report Discount Error</h2>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="text-gray-400 hover:text-gray-600"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            {/* Discontinued Checkbox - Move it to the top */}
-            <div className="mb-6">
-              <label className="flex items-center space-x-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Discontinued Checkbox */}
+            <div>
+              <label className="flex items-center space-x-2 text-gray-700">
                 <input
                   type="checkbox"
                   checked={formData.is_discontinued}
                   onChange={(e) => handleDiscontinuedChange(e.target.checked)}
-                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span className="font-medium">This discount has been discontinued</span>
+                <span>This discount has been discontinued</span>
               </label>
             </div>
 
             {/* Error Types Section */}
-            <div className={`space-y-4 mb-6 ${formData.is_discontinued ? 'opacity-50' : ''}`}>
-              <h3 className="font-medium">What's incorrect?</h3>
+            <div className={formData.is_discontinued ? 'opacity-50' : ''}>
+              <div className="mb-2 text-gray-700">What's incorrect?</div>
               <div className="grid grid-cols-2 gap-4">
-                <label className={`flex items-center space-x-2 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.days_error}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      days_error: e.target.checked,
-                      suggested_days: e.target.checked ? [] : prev.suggested_days
-                    }))}
-                    disabled={formData.is_discontinued}
-                    className="rounded border-gray-300"
-                  />
-                  <span className={formData.is_discontinued ? 'text-gray-400' : ''}>Days</span>
-                </label>
-                <label className={`flex items-center space-x-2 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.discount_error}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      discount_error: e.target.checked
-                    }))}
-                    disabled={formData.is_discontinued}
-                    className="rounded border-gray-300"
-                  />
-                  <span className={formData.is_discontinued ? 'text-gray-400' : ''}>Discount Percentage</span>
-                </label>
-                <label className={`flex items-center space-x-2 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.reimbursement_error}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      reimbursement_error: e.target.checked
-                    }))}
-                    disabled={formData.is_discontinued}
-                    className="rounded border-gray-300"
-                  />
-                  <span className={formData.is_discontinued ? 'text-gray-400' : ''}>Reimbursement Limit</span>
-                </label>
-                <label className={`flex items-center space-x-2 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.frequency_error}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      frequency_error: e.target.checked
-                    }))}
-                    disabled={formData.is_discontinued}
-                    className="rounded border-gray-300"
-                  />
-                  <span className={formData.is_discontinued ? 'text-gray-400' : ''}>Frequency</span>
-                </label>
+                {[
+                  { key: 'days_error', label: 'Days' },
+                  { key: 'discount_error', label: 'Discount Percentage' },
+                  { key: 'reimbursement_error', label: 'Reimbursement Limit' },
+                  { key: 'frequency_error', label: 'Frequency' }
+                ].map(({ key, label }) => (
+                  <label key={key} className={`flex items-center space-x-2 text-gray-700 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input
+                      type="checkbox"
+                      checked={formData[key as keyof typeof formData] as boolean}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        [key]: e.target.checked,
+                        ...(key === 'days_error' && { suggested_days: e.target.checked ? [] : prev.suggested_days })
+                      }))}
+                      disabled={formData.is_discontinued}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className={formData.is_discontinued ? 'text-gray-400' : ''}>{label}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
             {/* Conditional Input Fields */}
-            <div className="space-y-6 mb-6">
+            <div className="space-y-4">
               {formData.days_error && (
                 <div>
-                  <label className="block font-medium mb-2">Correct Days</label>
+                  <label className="block mb-2 text-gray-700">Correct Days</label>
                   <div className="grid grid-cols-2 gap-2">
                     {days.map(day => (
-                      <label key={day} className="flex items-center space-x-2">
+                      <label key={day} className="flex items-center space-x-2 text-gray-700">
                         <input
                           type="checkbox"
                           checked={formData.suggested_days?.includes(day) || false}
@@ -241,7 +221,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                               suggested_days: newDays
                             }));
                           }}
-                          className="rounded border-gray-300"
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                         <span>{day}</span>
                       </label>
@@ -252,46 +232,59 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
 
               {formData.discount_error && (
                 <div>
-                  <label className="block font-medium mb-2">
+                  <label className="block mb-2 text-gray-700">
                     Correct Discount Percentage
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.suggested_discount || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      suggested_discount: e.target.valueAsNumber
-                    }))}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Enter correct percentage"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.suggested_discount || ''}
+                      onChange={(e) => {
+                        const value = e.target.valueAsNumber;
+                        if (isNaN(value) || value <= 100) {
+                          setFormData(prev => ({
+                            ...prev,
+                            suggested_discount: isNaN(value) ? undefined : value
+                          }));
+                        }
+                      }}
+                      className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 pr-8"
+                      placeholder="Enter correct percentage"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                  </div>
                 </div>
               )}
 
               {formData.reimbursement_error && (
                 <div>
-                  <label className="block font-medium mb-2">
+                  <label className="block mb-2 text-gray-700">
                     Correct Reimbursement Limit
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.suggested_reimbursement || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      suggested_reimbursement: e.target.valueAsNumber
-                    }))}
-                    className="w-full px-3 py-2 border rounded-md"
-                    placeholder="Enter correct limit"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <input
+                      type="text"
+                      value={formData.suggested_reimbursement ? formData.suggested_reimbursement.toLocaleString('en-US') : ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setFormData(prev => ({
+                          ...prev,
+                          suggested_reimbursement: value ? parseInt(value) : undefined
+                        }));
+                      }}
+                      className="w-full px-3 py-2 pl-7 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Enter correct limit"
+                    />
+                  </div>
                 </div>
               )}
 
               {formData.frequency_error && (
                 <div>
-                  <label className="block font-medium mb-2">
+                  <label className="block mb-2 text-gray-700">
                     Correct Frequency
                   </label>
                   <select
@@ -300,7 +293,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                       ...prev,
                       suggested_frequency: e.target.value
                     }))}
-                    className="w-full px-3 py-2 border rounded-md"
+                    className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                   >
                     <option value="">Select frequency</option>
                     {frequencies.map(freq => (
@@ -314,8 +307,8 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
             </div>
 
             {/* Evidence URL */}
-            <div className="mb-6">
-              <label className="block font-medium mb-2">
+            <div>
+              <label className="block mb-2 text-gray-700">
                 Evidence URL <span className="text-red-500">*</span>
               </label>
               <input
@@ -326,14 +319,14 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                   ...prev,
                   evidence_url: e.target.value
                 }))}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="https://"
               />
             </div>
 
             {/* Comments */}
-            <div className="mb-6">
-              <label className="block font-medium mb-2">
+            <div>
+              <label className="block mb-2 text-gray-700">
                 Additional Comments
               </label>
               <textarea
@@ -342,19 +335,19 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                   ...prev,
                   comments: e.target.value
                 }))}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 rows={3}
                 placeholder="Any additional information..."
               />
             </div>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+              <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
                 {error}
               </div>
             )}
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -365,10 +358,10 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-4 py-2 bg-blue-600 text-white rounded-md ${
+                className={`px-4 py-2 bg-indigo-600 text-white rounded-md ${
                   isSubmitting
                     ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-blue-700'
+                    : 'hover:bg-indigo-700'
                 }`}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Report'}

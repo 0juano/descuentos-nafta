@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type { ReportErrorData } from '../components/ReportErrorModal';
 
 const COOLDOWN_KEY = 'last_error_report_time';
-const COOLDOWN_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const COOLDOWN_DURATION = 30 * 1000; // 30 seconds in milliseconds
 
 export const reportService = {
   async submitReport(data: ReportErrorData): Promise<void> {
