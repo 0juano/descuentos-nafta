@@ -45,6 +45,7 @@ function App() {
   const [showSearch, setShowSearch] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isRecommendButtonDisabled, setIsRecommendButtonDisabled] = useState(false);
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
   const [recommendFormData, setRecommendFormData] = useState<RecommendFormData>({
     fuel_brand: [],
     day: [],
@@ -314,6 +315,61 @@ function App() {
     setSearchQuery(value);
   };
 
+  // Add effect to handle rate limiting persistence and countdown
+  useEffect(() => {
+    // Check localStorage for existing cooldown
+    const lastRecommendTime = localStorage.getItem('lastRecommendTime');
+    if (lastRecommendTime) {
+      const timeElapsed = Date.now() - parseInt(lastRecommendTime);
+      const cooldownPeriod = 3000; // 3 seconds in milliseconds
+      
+      if (timeElapsed < cooldownPeriod) {
+        setIsRecommendButtonDisabled(true);
+        setCooldownTimeLeft(Math.ceil((cooldownPeriod - timeElapsed) / 1000));
+        
+        // Set up countdown timer
+        const timer = setInterval(() => {
+          setCooldownTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              setIsRecommendButtonDisabled(false);
+              localStorage.removeItem('lastRecommendTime');
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timer);
+      } else {
+        localStorage.removeItem('lastRecommendTime');
+      }
+    }
+  }, []);
+
+  const startCooldown = () => {
+    setIsRecommendButtonDisabled(true);
+    setCooldownTimeLeft(3);
+    localStorage.setItem('lastRecommendTime', Date.now().toString());
+
+    const timer = setInterval(() => {
+      setCooldownTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsRecommendButtonDisabled(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleRecommendClick = () => {
+    if (!isRecommendButtonDisabled) {
+      setIsRecommendModalOpen(true);
+    }
+  };
+
   const handleRecommendSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitStatus('idle');
@@ -322,6 +378,9 @@ function App() {
       alert('Please fill in all required fields and select at least one day');
       return;
     }
+
+    // Disable the button during submission
+    setIsRecommendButtonDisabled(true);
 
     try {
       // Log the data being sent
@@ -370,10 +429,13 @@ function App() {
           frequency: '',
           source_url: ''
         });
+        startCooldown();
       }, 2000);
     } catch (error) {
       console.error('Error submitting recommendation:', error);
       setSubmitStatus('error');
+      // Re-enable the button on error
+      setIsRecommendButtonDisabled(false);
       // Show error message to user
       if (error instanceof Error) {
         alert(`Error: ${error.message}`);
@@ -454,15 +516,7 @@ function App() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Fuel Discounts</h1>
             <button
-              onClick={() => {
-                if (!isRecommendButtonDisabled) {
-                  setIsRecommendModalOpen(true);
-                  setIsRecommendButtonDisabled(true);
-                  setTimeout(() => {
-                    setIsRecommendButtonDisabled(false);
-                  }, 3000); // 3 seconds timeout
-                }
-              }}
+              onClick={handleRecommendClick}
               disabled={isRecommendButtonDisabled}
               className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
                 isRecommendButtonDisabled 
@@ -471,7 +525,11 @@ function App() {
               }`}
             >
               <Plus className="h-4 w-4 mr-2" />
-              {isRecommendButtonDisabled ? 'Please wait...' : 'Recommend Discount'}
+              {isRecommendButtonDisabled 
+                ? cooldownTimeLeft > 0 
+                  ? `Please wait ${cooldownTimeLeft}s...` 
+                  : 'Processing...'
+                : 'Recommend Discount'}
             </button>
           </div>
         </div>
