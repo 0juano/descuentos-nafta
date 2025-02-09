@@ -19,6 +19,7 @@ import { reportService } from './lib/reportService';
 import { FlagButton } from './components/FlagButton';
 import { ReportErrorModal, type ReportErrorData } from './components/ReportErrorModal';
 import type { Discount, FuelBrand } from './types';
+import { Toast } from './components/Toast';
 
 type SortField = 'discount' | 'reimbursement_limit' | 'fuel_brand' | 'day' | null;
 type SortDirection = 'asc' | 'desc';
@@ -58,7 +59,9 @@ function App() {
     frequency: '',
     source_url: ''
   });
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Discount | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const brandDropdownRef = useRef<HTMLDivElement>(null);
   const dayDropdownRef = useRef<HTMLDivElement>(null);
@@ -112,10 +115,6 @@ function App() {
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const mobileFilterRef = useRef<HTMLDivElement>(null);
-
-  // Add new state for error reporting
-  const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Discount | null>(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -379,10 +378,9 @@ function App() {
 
   const handleRecommendSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitStatus('idle');
 
     if (recommendFormData.fuel_brand.length === 0 || !recommendFormData.card_method || !recommendFormData.discount || recommendFormData.day.length === 0) {
-      alert('Please fill in all required fields and select at least one day');
+      setToast({ message: 'Please fill in all required fields and select at least one day', type: 'error' });
       return;
     }
 
@@ -390,18 +388,6 @@ function App() {
     setIsRecommendButtonDisabled(true);
 
     try {
-      // Log the data being sent
-      console.log('Sending data:', {
-        fuel_brand: recommendFormData.fuel_brand[0],
-        days: recommendFormData.day,
-        payment_method: recommendFormData.card_method,
-        discount_percentage: parseInt(recommendFormData.discount),
-        reimbursement_limit: parseInt(recommendFormData.reimbursement_limit.replace(/,/g, '')),
-        frequency: recommendFormData.frequency,
-        source_url: recommendFormData.source_url || null,
-        status: 'pending'
-      });
-
       const { data, error } = await supabase
         .from('recommended_discounts')
         .insert({
@@ -418,37 +404,31 @@ function App() {
 
       if (error) {
         console.error('Supabase error:', error);
-        alert(`Error submitting recommendation: ${error.message}`);
+        setToast({ message: `Error submitting recommendation: ${error.message}`, type: 'error' });
         throw error;
       }
 
-      console.log('Success! Data:', data);
-      setSubmitStatus('success');
-      setTimeout(() => {
-        setIsRecommendModalOpen(false);
-        setSubmitStatus('idle');
-        setRecommendFormData({
-          fuel_brand: [],
-          day: [],
-          card_method: '',
-          discount: '',
-          reimbursement_limit: '',
-          frequency: '',
-          source_url: ''
-        });
-        startCooldown();
-      }, 2000);
+      setToast({ message: 'Discount recommended successfully!', type: 'success' });
+      setIsRecommendModalOpen(false);
+      setRecommendFormData({
+        fuel_brand: [],
+        day: [],
+        card_method: '',
+        discount: '',
+        reimbursement_limit: '',
+        frequency: '',
+        source_url: ''
+      });
+      startCooldown();
     } catch (error) {
       console.error('Error submitting recommendation:', error);
-      setSubmitStatus('error');
-      // Re-enable the button on error
-      setIsRecommendButtonDisabled(false);
-      // Show error message to user
       if (error instanceof Error) {
-        alert(`Error: ${error.message}`);
+        setToast({ message: `Error: ${error.message}`, type: 'error' });
       } else {
-        alert('An unexpected error occurred while submitting the recommendation');
+        setToast({ message: 'An unexpected error occurred while submitting the recommendation', type: 'error' });
       }
+    } finally {
+      setIsRecommendButtonDisabled(false);
     }
   };
 
@@ -511,9 +491,14 @@ function App() {
       await reportService.submitReport(data);
       setIsReportModalOpen(false);
       setSelectedDiscountForReport(null);
-      // Show success message (you can add a toast notification here)
+      setToast({ message: 'Error report submitted successfully!', type: 'success' });
     } catch (error) {
-      throw error; // Let the modal component handle the error
+      if (error instanceof Error) {
+        setToast({ message: error.message, type: 'error' });
+      } else {
+        setToast({ message: 'An unexpected error occurred', type: 'error' });
+      }
+      throw error;
     }
   };
 
@@ -929,8 +914,18 @@ function App() {
 
       {/* Recommend Modal */}
       {isRecommendModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div ref={modalRef} className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsRecommendModalOpen(false);
+            }
+          }}
+        >
+          <div 
+            ref={modalRef} 
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out animate-modal-slide-in"
+          >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">Recommend a New Discount</h2>
@@ -1137,13 +1132,12 @@ function App() {
                 <div className="mt-6">
                   <button
                     type="submit"
-                    className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
-                      ${submitStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : 
-                        submitStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : 
-                        'bg-indigo-600 hover:bg-indigo-700'} 
-                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                    disabled={isRecommendButtonDisabled}
+                    className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                      isRecommendButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    {submitStatus === 'success' ? 'Discount recommended successfully!' : submitStatus === 'error' ? 'Error recommending discount' : 'Recommend Discount'}
+                    {isRecommendButtonDisabled ? 'Submitting...' : 'Recommend Discount'}
                   </button>
                 </div>
               </form>
@@ -1162,6 +1156,15 @@ function App() {
           }}
           discountId={selectedDiscountForReport.id}
           onSubmit={handleReportSubmit}
+        />
+      )}
+
+      {/* Add Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
       )}
     </div>
