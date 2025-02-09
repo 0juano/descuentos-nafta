@@ -44,6 +44,7 @@ function App() {
   const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isRecommendButtonDisabled, setIsRecommendButtonDisabled] = useState(false);
   const [recommendFormData, setRecommendFormData] = useState<RecommendFormData>({
     fuel_brand: [],
     day: [],
@@ -453,11 +454,24 @@ function App() {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Fuel Discounts</h1>
             <button
-              onClick={() => setIsRecommendModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              onClick={() => {
+                if (!isRecommendButtonDisabled) {
+                  setIsRecommendModalOpen(true);
+                  setIsRecommendButtonDisabled(true);
+                  setTimeout(() => {
+                    setIsRecommendButtonDisabled(false);
+                  }, 3000); // 3 seconds timeout
+                }
+              }}
+              disabled={isRecommendButtonDisabled}
+              className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isRecommendButtonDisabled 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+              }`}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Recommend Discount
+              {isRecommendButtonDisabled ? 'Please wait...' : 'Recommend Discount'}
             </button>
           </div>
         </div>
