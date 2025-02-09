@@ -1,19 +1,15 @@
-# Fuel Discounts Tracker 🚗 💰
+# Fuel Discounts Tracker 🚗 💰 / Seguimiento de Descuentos de Nafta 🚗 💰
 
-A modern web application to track and manage fuel discounts across different gas stations in Argentina. Keep track of credit card discounts, reimbursement limits, and promotional days all in one place.
+A modern web application to track and manage fuel discounts across different gas stations in Argentina. // Aplicación web moderna para seguir y gestionar descuentos en combustible en distintas estaciones de servicio de Argentina.
 
-## Features ✨
-
-- **Multi-brand Support**: Track discounts for YPF, SHELL, AXION, and multiple brands
-- **Advanced Filtering**: 
-  - Filter by fuel brands
-  - Filter by days of the week
-  - Search across all discount details
-- **Smart Sorting**: Sort discounts by:
-  - Discount percentage
-  - Reimbursement limit
-  - Fuel brand
-  - Day
+## Features ✨ / Características ✨
+- **Multi-brand Support**: Track discounts for YPF, SHELL, AXION... // Soporte múltiples marcas: YPF, SHELL, AXION...
+- **Advanced Filtering** // Filtrado avanzado:
+  - Filter by fuel brands // Filtrar por marcas
+  - Filter by days of the week // Filtrar por días de la semana
+- **Smart Sorting** // Orden inteligente:
+  - Sort by discount percentage // Ordenar por porcentaje de descuento
+  - Sort by reimbursement limit // Ordenar por límite de reintegro
 - **Responsive Design**: Works seamlessly on both desktop and mobile devices
 - **Visual Indicators**:
   - Color-coded discount badges
@@ -21,7 +17,7 @@ A modern web application to track and manage fuel discounts across different gas
   - Brand-specific color schemes
 - **Anti-spam Measures**: Implements client-side debouncing and rate limiting on the "Recommend Discount" button using a cooldown timer (persisted in localStorage) to prevent rapid repeated submissions.
 
-## Getting Started 🚀
+## Getting Started 🚀 / Comenzando 🚀
 
 ### Prerequisites
 
@@ -29,32 +25,11 @@ A modern web application to track and manage fuel discounts across different gas
 - npm or yarn
 - Supabase account (for the database)
 
-### Installation
-
-1. Clone the repository:
+### Installation / Instalación
 ```bash
-git clone https://github.com/yourusername/descuentos-nafta.git
-cd descuentos-nafta
-```
-
-2. Install dependencies:
-```bash
+# Unified installation instructions
 npm install
-# or
-yarn install
-```
-
-3. Create a `.env` file in the root directory with your Supabase credentials:
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-4. Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
+npm run dev  # Use consistent dev command instead of 'start'
 ```
 
 ## Database Schema 📊
@@ -82,17 +57,15 @@ create table discounts (
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## Tech Stack 🛠️
-
+## Tech Stack 🛠️ / Tecnologías 🛠️
 - React + TypeScript
 - Vite
 - Tailwind CSS
 - Supabase
 - Lucide Icons
 
-## License 📝
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License 📝 / Licencia 📝
+MIT License - see [LICENSE](LICENSE) // Consulta el archivo LICENSE
 
 ## Acknowledgments 🙏
 
@@ -136,7 +109,6 @@ Las contribuciones son bienvenidas. Por favor, abre un issue o envía un pull re
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo LICENSE para más detalles.
 
-## Contacto
-
-Para consultas o sugerencias, por favor contacta a [tu_email@dominio.com].
+## Contact 📧 / Contacto 📧
+[your_email@domain.com] // [tu_email@dominio.com]
  
