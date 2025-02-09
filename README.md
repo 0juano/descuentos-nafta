@@ -19,6 +19,7 @@ A modern web application to track and manage fuel discounts across different gas
   - Color-coded discount badges
   - Visual distinction for high-value reimbursement limits
   - Brand-specific color schemes
+- **Anti-spam Measures**: Implements client-side debouncing and rate limiting on the "Recommend Discount" button using a cooldown timer (persisted in localStorage) to prevent rapid repeated submissions.
 
 ## Getting Started 🚀
 
