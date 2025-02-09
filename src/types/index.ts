@@ -4,11 +4,9 @@ export interface Discount {
   day: string;
   card_method: string;
   discount: number;
-  spending_limit: number;
   reimbursement_limit: number;
   frequency: string;
-  created_at?: string;
-  updated_at?: string;
+  source_url?: string;
 }
 
 export interface RecommendedDiscount {

@@ -15,6 +15,9 @@ import ypfLogo from './icons/ypf.svg';
 import shellLogo from './icons/shell.png';
 import axionLogo from './icons/axion.webp';
 import { supabase } from './lib/supabase';
+import { reportService } from './lib/reportService';
+import { FlagButton } from './components/FlagButton';
+import { ReportErrorModal, type ReportErrorData } from './components/ReportErrorModal';
 import type { Discount, FuelBrand } from './types';
 
 type SortField = 'discount' | 'reimbursement_limit' | 'fuel_brand' | 'day' | null;
@@ -109,6 +112,10 @@ function App() {
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const mobileFilterRef = useRef<HTMLDivElement>(null);
+
+  // Add new state for error reporting
+  const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Discount | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -498,6 +505,18 @@ function App() {
     };
   }, [lastScrollY]);
 
+  // Add handler for report submission
+  const handleReportSubmit = async (data: ReportErrorData) => {
+    try {
+      await reportService.submitReport(data);
+      setIsReportModalOpen(false);
+      setSelectedDiscountForReport(null);
+      // Show success message (you can add a toast notification here)
+    } catch (error) {
+      throw error; // Let the modal component handle the error
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -818,9 +837,17 @@ function App() {
                           <span className="text-sm text-gray-500">{discount.card_method}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(discount.discount)}`}>
-                            {discount.discount}%
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(discount.discount)}`}>
+                              {discount.discount}%
+                            </span>
+                            <FlagButton
+                              onClick={() => {
+                                setSelectedDiscountForReport(discount);
+                                setIsReportModalOpen(true);
+                              }}
+                            />
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.reimbursement_limit)}`}>
@@ -841,9 +868,9 @@ function App() {
               {discounts.map((discount) => (
                 <div
                   key={discount.id}
-                  className="bg-white rounded-lg shadow-sm overflow-hidden transform transition-all duration-200 hover:shadow-md"
+                  className="bg-white rounded-lg shadow-sm transform transition-all duration-200 hover:shadow-md relative"
                 >
-                  <div className={`bg-gradient-to-r ${getBrandColor(discount.fuel_brand)} p-4`}>
+                  <div className={`bg-gradient-to-r ${getBrandColor(discount.fuel_brand)} p-4 overflow-visible`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">
@@ -852,8 +879,16 @@ function App() {
                         </h3>
                         <p className="text-gray-700 text-sm mt-1">{discount.day}</p>
                       </div>
-                      <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.discount)}`}>
-                        <span className="text-lg font-bold">{discount.discount}%</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.discount)}`}>
+                          <span className="text-lg font-bold">{discount.discount}%</span>
+                        </div>
+                        <FlagButton
+                          onClick={() => {
+                            setSelectedDiscountForReport(discount);
+                            setIsReportModalOpen(true);
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1115,6 +1150,19 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add the report modal */}
+      {selectedDiscountForReport && (
+        <ReportErrorModal
+          isOpen={isReportModalOpen}
+          onClose={() => {
+            setIsReportModalOpen(false);
+            setSelectedDiscountForReport(null);
+          }}
+          discountId={selectedDiscountForReport.id}
+          onSubmit={handleReportSubmit}
+        />
       )}
     </div>
   );
