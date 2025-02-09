@@ -181,6 +181,21 @@ function App() {
     });
   };
 
+  const handleSearch = (value: string) => {
+    try {
+      // Sanitize the search input by removing special characters and limiting length
+      const sanitizedValue = value
+        .replace(/[^\w\s]/g, '') // Remove special characters, keep only words and spaces
+        .trim()
+        .slice(0, 100); // Limit length to 100 characters
+      setSearchQuery(sanitizedValue);
+      // No need to call fetchDiscounts here as it's triggered by the useEffect
+    } catch (error) {
+      console.error('Error in search input:', error);
+      setError('Invalid search input. Please try again.');
+    }
+  };
+
   useEffect(() => {
     fetchDiscounts();
   }, [selectedBrands, selectedDays, sortField, sortDirection, searchQuery]);
@@ -211,23 +226,28 @@ function App() {
         query = query.or(dayConditions.join(','));
       }
 
-      // Apply search query if present
+      // Apply search query if present and valid
       if (searchQuery.trim()) {
         const searchTerm = searchQuery.toLowerCase().trim();
-        // Create a search filter that looks in all relevant fields
-        query = query.or(
-          `card_method.ilike.%${searchTerm}%,` +
-          `frequency.ilike.%${searchTerm}%`
-        );
-        
-        // If no brand filter is active, also search in fuel_brand
-        if (selectedBrands.length === 0) {
-          query = query.or(`fuel_brand.ilike.%${searchTerm}%`);
-        }
-        
-        // If no day filter is active, also search in day
-        if (selectedDays.length === 0) {
-          query = query.or(`day.ilike.%${searchTerm}%`);
+        // Validate search term length and content
+        if (searchTerm.length <= 100 && /^[\w\s]*$/.test(searchTerm)) {
+          // Create a search filter that looks in all relevant fields
+          query = query.or(
+            `card_method.ilike.%${searchTerm}%,` +
+            `frequency.ilike.%${searchTerm}%`
+          );
+          
+          // If no brand filter is active, also search in fuel_brand
+          if (selectedBrands.length === 0) {
+            query = query.or(`fuel_brand.ilike.%${searchTerm}%`);
+          }
+          
+          // If no day filter is active, also search in day
+          if (selectedDays.length === 0) {
+            query = query.or(`day.ilike.%${searchTerm}%`);
+          }
+        } else {
+          throw new Error('Invalid search input. Please use only letters, numbers, and spaces.');
         }
       }
 
@@ -245,6 +265,7 @@ function App() {
     } catch (error) {
       console.error('Error fetching discounts:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch discounts');
+      setDiscounts([]); // Clear discounts on error
     } finally {
       setLoading(false);
     }
@@ -315,10 +336,6 @@ function App() {
       }
       return newDays;
     });
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
   };
 
   // Add effect to handle rate limiting persistence and countdown
@@ -552,10 +569,7 @@ function App() {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    fetchDiscounts();
-                  }}
+                  onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Search..."
                   className="block w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 />
@@ -626,10 +640,7 @@ function App() {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    fetchDiscounts();
-                  }}
+                  onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Search discounts, cards, brands..."
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
