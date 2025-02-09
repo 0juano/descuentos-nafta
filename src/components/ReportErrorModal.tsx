@@ -107,6 +107,21 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       return;
     }
 
+    // Validate URL format
+    let url = formData.evidence_url;
+    // If URL doesn't start with protocol, add https://
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(url);
+    } catch {
+      setError('Please enter a valid website address');
+      return;
+    }
+
     // Validate suggested days if days_error is checked
     if (formData.days_error && (!formData.suggested_days || formData.suggested_days.length === 0)) {
       setError('Please select at least one correct day');
@@ -127,7 +142,12 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
 
     try {
       setIsSubmitting(true);
-      await onSubmit(formData);
+      // Update the URL with protocol if it was added
+      const dataToSubmit = {
+        ...formData,
+        evidence_url: url
+      };
+      await onSubmit(dataToSubmit);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit report');
@@ -149,7 +169,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl">Report Discount Error</h2>
+            <h2 className="text-xl font-bold text-gray-900">Report Discount Error</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
@@ -312,7 +332,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                 Evidence URL <span className="text-red-500">*</span>
               </label>
               <input
-                type="url"
+                type="text"
                 required
                 value={formData.evidence_url}
                 onChange={(e) => setFormData(prev => ({
@@ -320,8 +340,11 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                   evidence_url: e.target.value
                 }))}
                 className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="https://"
+                placeholder="www.example.com"
               />
+              <p className="mt-1 text-sm text-gray-500">
+                Enter the website where you found this information
+              </p>
             </div>
 
             {/* Comments */}
