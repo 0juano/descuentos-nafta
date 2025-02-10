@@ -21,6 +21,7 @@ export interface ReportarErrorData {
   url_evidencia: string;
   comentarios?: string;
   esta_discontinuado: boolean;
+  sin_limite_reintegro?: boolean;
 }
 
 export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
@@ -86,6 +87,35 @@ export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
       reintegro_sugerido: checked ? undefined : prev.reintegro_sugerido,
       frecuencia_sugerida: checked ? undefined : prev.frecuencia_sugerida,
     }));
+  };
+
+  const handleDiscountChange = (value: string) => {
+    // Remove non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // Convert to number for validation
+    const numValue = parseInt(numericValue);
+    // Only update if empty or valid percentage (0-100)
+    if (numericValue === '' || (numValue >= 0 && numValue <= 100)) {
+      setFormData(prev => ({
+        ...prev,
+        descuento_sugerido: numericValue ? Number(numericValue) : undefined
+      }));
+    }
+  };
+
+  const handleReimbursementChange = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    // Convert to number for validation
+    const numValue = numericValue ? parseInt(numericValue) : undefined;
+    // Only update if empty or less than or equal to 1,000,000
+    if (!numValue || numValue <= 1000000) {
+      setFormData(prev => ({
+        ...prev,
+        reintegro_sugerido: numValue,
+        sin_limite_reintegro: false // Reset sin_limite when user types a value
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,14 +285,9 @@ export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
                   <label className="block mb-2 text-gray-700">Porcentaje de Descuento Correcto</label>
                   <div className="relative">
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
+                      type="text"
                       value={formData.descuento_sugerido || ''}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        descuento_sugerido: e.target.value ? Number(e.target.value) : undefined
-                      }))}
+                      onChange={(e) => handleDiscountChange(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="Ej: 15"
                     />
@@ -276,21 +301,33 @@ export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
               {formData.error_reintegro && (
                 <div>
                   <label className="block mb-2 text-gray-700">Límite de Reintegro Correcto</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">$</span>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.sin_limite_reintegro ? 'Sin límite' : (formData.reintegro_sugerido ? formData.reintegro_sugerido.toLocaleString('en-US') : '')}
+                        onChange={(e) => handleReimbursementChange(e.target.value)}
+                        className={`block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${formData.sin_limite_reintegro ? 'bg-gray-100 text-gray-500' : ''}`}
+                        placeholder="Ej: 5,000 (máx: 1,000,000)"
+                        disabled={formData.sin_limite_reintegro}
+                      />
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.reintegro_sugerido || ''}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        reintegro_sugerido: e.target.value ? Number(e.target.value) : undefined
-                      }))}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="Ej: 5000"
-                    />
+                    <label className="flex items-center space-x-2 text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={formData.sin_limite_reintegro || false}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          sin_limite_reintegro: e.target.checked,
+                          reintegro_sugerido: e.target.checked ? undefined : prev.reintegro_sugerido
+                        }))}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-500">Sin límite de reintegro</span>
+                    </label>
                   </div>
                 </div>
               )}

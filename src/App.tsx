@@ -18,6 +18,7 @@ import { FlagButton } from './components/FlagButton';
 import { ReportErrorModal, type ReportarErrorData } from './components/ReportErrorModal';
 import type { Descuento } from './types';
 import { Toast } from './components/Toast';
+import { ThemeToggle } from './components/ui/theme-toggle';
 
 type CampoOrdenamiento = 'descuento' | 'limite_reintegro' | 'marca_combustible' | 'dia' | null;
 type DireccionOrdenamiento = 'asc' | 'desc';
@@ -95,20 +96,20 @@ function App() {
 
   const getDiscountBadgeStyle = (percentage: number): string => {
     if (percentage > 20) {
-      return 'bg-purple-100 text-purple-800 ring-1 ring-purple-600/20';
+      return 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ring-1 ring-purple-600/20 dark:ring-purple-300/20';
     } else if (percentage > 10) {
-      return 'bg-green-100 text-green-800 ring-1 ring-green-600/20';
+      return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ring-1 ring-green-600/20 dark:ring-green-300/20';
     }
-    return 'bg-blue-100 text-blue-800 ring-1 ring-blue-600/20';
+    return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ring-1 ring-blue-600/20 dark:ring-blue-300/20';
   };
 
   const getReimburseLimitStyle = (limit: number): string => {
     if (limit > 10000) {
-      return 'bg-purple-100 text-purple-800 ring-1 ring-purple-600/20';
+      return 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 ring-1 ring-purple-600/20 dark:ring-purple-300/20';
     } else if (limit > 5000) {
-      return 'bg-green-100 text-green-800 ring-1 ring-green-600/20';
+      return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 ring-1 ring-green-600/20 dark:ring-green-300/20';
     }
-    return 'bg-blue-100 text-blue-800 ring-1 ring-blue-600/20';
+    return 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 ring-1 ring-blue-600/20 dark:ring-blue-300/20';
   };
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -141,8 +142,12 @@ function App() {
   }, []);
 
   const handleDiscountChange = (value: string) => {
+    // Remove non-numeric characters
     const numericValue = value.replace(/[^0-9]/g, '');
-    if (numericValue === '' || parseInt(numericValue) <= 100) {
+    // Convert to number for validation
+    const numValue = parseInt(numericValue);
+    // Only update if empty or valid percentage (0-100)
+    if (numericValue === '' || (numValue >= 0 && numValue <= 100)) {
       setRecommendFormData(prev => ({ ...prev, descuento: numericValue }));
     }
   };
@@ -150,8 +155,8 @@ function App() {
   const handleReimbursementLimitChange = (value: string) => {
     // Remove all non-numeric characters
     const numericValue = value.replace(/[^0-9]/g, '');
-    // Format with thousand separators
-    const formattedValue = numericValue ? parseInt(numericValue).toLocaleString() : '';
+    // Format with thousand separators if there's a value
+    const formattedValue = numericValue ? parseInt(numericValue).toLocaleString('es-AR') : '';
     setRecommendFormData(prev => ({ ...prev, limite_reintegro: formattedValue }));
   };
 
@@ -391,16 +396,16 @@ function App() {
 
     try {
       const { error: supabaseError } = await supabase
-        .from('recommended_discounts')
+        .from('descuentos_recomendados')
         .insert({
-          marca_combustible: recommendFormData.marca_combustible[0], // Taking first selected brand
+          marca_combustible: recommendFormData.marca_combustible[0],
           dias: recommendFormData.dia,
           metodo_pago: recommendFormData.metodo_pago,
-          descuento_porcentaje: parseInt(recommendFormData.descuento),
+          porcentaje_descuento: parseInt(recommendFormData.descuento),
           limite_reintegro: parseInt(recommendFormData.limite_reintegro.replace(/,/g, '')),
           frecuencia: recommendFormData.frecuencia,
           url_fuente: recommendFormData.url_fuente || null,
-          status: 'pending'
+          estado: 'pendiente'
         })
         .select();
 
@@ -510,191 +515,199 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Descuentos de Combustible</h1>
-            <button
-              onClick={handleRecommendClick}
-              disabled={isRecommendButtonDisabled}
-              className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                isRecommendButtonDisabled 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-              }`}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {isRecommendButtonDisabled 
-                ? cooldownTimeLeft > 0 
-                  ? `Espere ${cooldownTimeLeft}s...` 
-                  : 'Procesando...'
-                : 'Recomendar Descuento'}
-            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Descuentos de Combustible</h1>
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <button
+                onClick={handleRecommendClick}
+                disabled={isRecommendButtonDisabled}
+                className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                  isRecommendButtonDisabled 
+                    ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                    : 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
+                }`}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {isRecommendButtonDisabled 
+                  ? cooldownTimeLeft > 0 
+                    ? `Espere ${cooldownTimeLeft}s...` 
+                    : 'Procesando...'
+                  : 'Recomendar Descuento'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className={`bg-white p-2 sm:p-4 rounded-lg shadow-sm mb-6 sticky top-[73px] z-10 backdrop-blur-sm bg-white/95 transition-all duration-300 transform
-          ${!showSearch ? 'sm:opacity-100 sm:translate-y-0 opacity-0 -translate-y-full pointer-events-none sm:pointer-events-auto' : 'opacity-100 translate-y-0'}`}>
+        <div className="mb-6">
           {/* Mobile layout */}
-          <div className="flex flex-row items-center gap-2 sm:hidden">
-            <div className="flex-1 min-w-0">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Buscar..."
-                  className="block w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </div>
-
-            <div className="relative" ref={mobileFilterRef}>
-              <button
-                onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-                className="inline-flex items-center px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <Filter className="h-4 w-4 text-gray-400" />
-                <ChevronDown className="h-4 w-4 ml-1 text-gray-400" />
-              </button>
-
-              {mobileFilterOpen && (
-                <div className="absolute right-0 mt-1 w-72 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Marcas</label>
-                      <div className="space-y-2">
-                        {brands.map(brand => (
-                          <label key={brand} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedBrands.includes(brand)}
-                              onChange={(e) => handleBrandSelect(brand)}
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-gray-700 flex items-center">
-                              {getBrandIcon(brand)}
-                              {brand}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Días</label>
-                      <div className="space-y-2">
-                        {days.map(day => (
-                          <label key={day} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedDays.includes(day)}
-                              onChange={(e) => handleDaySelect(day)}
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">{day}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+          <div className="sm:hidden mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    placeholder="Buscar descuentos, tarjetas, marcas..."
+                    className="block w-full pl-8 pr-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-xs"
+                  />
                 </div>
-              )}
+
+                <div className="relative" ref={mobileFilterRef}>
+                  <button
+                    onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+                    className="inline-flex items-center px-2 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <Filter className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    <ChevronDown className="h-4 w-4 ml-1 text-gray-400 dark:text-gray-500" />
+                  </button>
+
+                  {mobileFilterOpen && (
+                    <div className="absolute right-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                      <div className="p-4">
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Marcas</label>
+                          <div className="space-y-2">
+                            {brands.map(brand => (
+                              <label key={brand} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBrands.includes(brand)}
+                                  onChange={() => handleBrandSelect(brand)}
+                                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                                />
+                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                                  {getBrandIcon(brand)}
+                                  {brand}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Días</label>
+                          <div className="space-y-2">
+                            {days.map(day => (
+                              <label key={day} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDays.includes(day)}
+                                  onChange={() => handleDaySelect(day)}
+                                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                                />
+                                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{day}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Desktop layout */}
           <div className="hidden sm:block">
-            <div className="mb-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2">
+              <div className="mb-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    placeholder="Buscar descuentos, tarjetas, marcas..."
+                    className="block w-full pl-8 pr-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-xs"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Buscar descuentos, tarjetas, marcas..."
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                />
               </div>
-            </div>
 
-            <div className="flex flex-row items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Filtros:</span>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <div className="relative" ref={brandDropdownRef}>
-                  <button
-                    onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                    className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    <span className="truncate">
-                      {selectedBrands.length === 0 
-                        ? 'Seleccionar Marcas'
-                        : selectedBrands.join(', ')}
-                    </span>
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </button>
-                  {brandDropdownOpen && (
-                    <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                      <div className="p-2">
-                        {brands.map(brand => (
-                          <label key={brand} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedBrands.includes(brand)}
-                              onChange={(e) => handleBrandSelect(brand)}
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-gray-700 flex items-center">
-                              {getBrandIcon(brand)}
-                              {brand}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <div className="flex flex-row items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros:</span>
                 </div>
-
-                <div className="relative" ref={dayDropdownRef}>
-                  <button
-                    onClick={() => setDayDropdownOpen(!dayDropdownOpen)}
-                    className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  >
-                    <span className="truncate">
-                      {selectedDays.length === 0 
-                        ? 'Seleccionar Días'
-                        : selectedDays.map(day => getAbbreviatedDay(day)).join(', ')}
-                    </span>
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </button>
-                  {dayDropdownOpen && (
-                    <div className="absolute mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                      <div className="p-2">
-                        {days.map(day => (
-                          <label key={day} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedDays.includes(day)}
-                              onChange={(e) => handleDaySelect(day)}
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">{day}</span>
-                          </label>
-                        ))}
+                <div className="flex flex-wrap gap-4">
+                  <div className="relative" ref={brandDropdownRef}>
+                    <button
+                      onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                      className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <span className="truncate text-gray-700 dark:text-gray-300">
+                        {selectedBrands.length === 0 
+                          ? 'Seleccionar Marcas'
+                          : selectedBrands.join(', ')}
+                      </span>
+                      <ChevronDown className="h-4 w-4 ml-2 text-gray-400 dark:text-gray-500" />
+                    </button>
+                    {brandDropdownOpen && (
+                      <div className="absolute mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                        <div className="p-2">
+                          {brands.map(brand => (
+                            <label key={brand} className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedBrands.includes(brand)}
+                                onChange={() => handleBrandSelect(brand)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                              />
+                              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                                {getBrandIcon(brand)}
+                                {brand}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  <div className="relative" ref={dayDropdownRef}>
+                    <button
+                      onClick={() => setDayDropdownOpen(!dayDropdownOpen)}
+                      className="flex items-center justify-between w-48 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <span className="truncate text-gray-700 dark:text-gray-300">
+                        {selectedDays.length === 0 
+                          ? 'Seleccionar Días'
+                          : selectedDays.map(day => getAbbreviatedDay(day)).join(', ')}
+                      </span>
+                      <ChevronDown className="h-4 w-4 ml-2 text-gray-400 dark:text-gray-500" />
+                    </button>
+                    {dayDropdownOpen && (
+                      <div className="absolute mt-1 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 border border-gray-200 dark:border-gray-700">
+                        <div className="p-2">
+                          {days.map(day => (
+                            <label key={day} className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedDays.includes(day)}
+                                onChange={() => handleDaySelect(day)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+                              />
+                              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                {day}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -706,7 +719,7 @@ function App() {
               {selectedBrands.map(brand => (
                 <span
                   key={brand}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200"
                 >
                   {brand}
                   <button
@@ -723,7 +736,7 @@ function App() {
               {selectedDays.map(day => (
                 <span
                   key={day}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
                 >
                   {getAbbreviatedDay(day)}
                   <button
@@ -743,21 +756,21 @@ function App() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-center text-gray-500">Cargando descuentos...</div>
+            <div className="text-center text-gray-500 dark:text-gray-400">Cargando descuentos...</div>
           </div>
         ) : descuentos.length === 0 ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-center text-gray-500">No se encontraron descuentos</div>
+            <div className="text-center text-gray-500 dark:text-gray-400">No se encontraron descuentos</div>
           </div>
         ) : (
           <>
-            <div className="hidden md:block overflow-hidden bg-white rounded-lg shadow-sm">
+            <div className="hidden md:block overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('marca_combustible')}
                       >
                         <div className="flex items-center gap-1">
@@ -766,7 +779,7 @@ function App() {
                         </div>
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('dia')}
                       >
                         <div className="flex items-center gap-1">
@@ -774,11 +787,11 @@ function App() {
                           {getSortIcon('dia')}
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Método de Pago
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('descuento')}
                       >
                         <div className="flex items-center gap-1">
@@ -787,7 +800,7 @@ function App() {
                         </div>
                       </th>
                       <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                         onClick={() => handleSort('limite_reintegro')}
                       >
                         <div className="flex items-center gap-1">
@@ -795,27 +808,27 @@ function App() {
                           {getSortIcon('limite_reintegro')}
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Frecuencia
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {descuentos.map((descuento) => (
-                      <tr key={descuento.id} className="hover:bg-gray-50 transition-colors duration-150">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900">
+                      <tr key={descuento.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {getBrandIcon(descuento.marca_combustible)}
                             {descuento.marca_combustible}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{descuento.dia}</span>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{descuento.dia}</span>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-500">{descuento.metodo_pago}</span>
+                        <td className="px-4 py-3">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{descuento.metodo_pago}</span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(descuento.descuento)}`}>
                               {descuento.descuento}%
@@ -828,13 +841,13 @@ function App() {
                             />
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(descuento.limite_reintegro)}`}>
                             ${descuento.limite_reintegro.toLocaleString()}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{descuento.frecuencia}</span>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">{descuento.frecuencia}</span>
                         </td>
                       </tr>
                     ))}

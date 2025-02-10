@@ -1,51 +1,44 @@
 import { supabase } from './supabase';
-import type { ReportErrorData } from '../components/ReportErrorModal';
+import type { ReportarErrorData } from '../components/ReportErrorModal';
 
 const CLAVE_ENFRIAMIENTO = 'ultimo_reporte_error_tiempo';
 const DURACION_ENFRIAMIENTO = 30 * 1000; // 30 segundos en milisegundos
 
 export const reportService = {
-  async enviarReporte(data: ReportErrorData): Promise<void> {
-    // Verificar enfriamiento
-    const ultimoTiempoReporte = localStorage.getItem(CLAVE_ENFRIAMIENTO);
-    if (ultimoTiempoReporte) {
-      const tiempoDesdeUltimoReporte = Date.now() - parseInt(ultimoTiempoReporte);
-      if (tiempoDesdeUltimoReporte < DURACION_ENFRIAMIENTO) {
-        throw new Error(`Por favor espere ${Math.ceil((DURACION_ENFRIAMIENTO - tiempoDesdeUltimoReporte) / 1000 / 60)} minutos antes de enviar otro reporte.`);
-      }
+  async enviarReporte(data: ReportarErrorData): Promise<void> {
+    // Check if there's already a pending report for this discount
+    const { data: existingReport } = await supabase
+      .from('reported_errors')
+      .select('id')
+      .eq('discount_id', data.discount_id)
+      .single();
+
+    if (existingReport) {
+      throw new Error('Ya existe un reporte pendiente para este descuento');
     }
 
-    try {
-      const { error } = await supabase
-        .from('errores_reportados')
-        .insert([{
-          id_descuento: data.discount_id,
-          esta_discontinuado: data.is_discontinued,
-          error_dias: data.days_error,
-          error_descuento: data.discount_error,
-          error_reintegro: data.reimbursement_error,
-          error_frecuencia: data.frequency_error,
-          dias_sugeridos: data.suggested_days,
-          descuento_sugerido: data.suggested_discount,
-          reintegro_sugerido: data.suggested_reimbursement,
-          frecuencia_sugerida: data.suggested_frequency,
-          url_evidencia: data.evidence_url,
-          comentarios: data.comments
-        }]);
+    // Insert the new report
+    const { error } = await supabase
+      .from('reported_errors')
+      .insert({
+        discount_id: data.discount_id,
+        is_discontinued: data.esta_discontinuado,
+        days_error: data.error_dias,
+        discount_error: data.error_descuento,
+        reimbursement_error: data.error_reintegro,
+        frequency_error: data.error_frecuencia,
+        suggested_days: data.dias_sugeridos,
+        suggested_discount: data.descuento_sugerido,
+        suggested_reimbursement: data.sin_limite_reintegro ? -1 : data.reintegro_sugerido,
+        suggested_frequency: data.frecuencia_sugerida,
+        evidence_url: data.url_evidencia,
+        comments: data.comentarios
+      });
 
-      if (error) {
-        if (error.message?.includes('ya existe un reporte pendiente')) {
-          throw new Error('Ya existe un reporte pendiente de revisión para este descuento.');
-        }
-        throw error;
-      }
+    if (error) throw error;
 
-      // Actualizar marca de tiempo de enfriamiento
-      localStorage.setItem(CLAVE_ENFRIAMIENTO, Date.now().toString());
-    } catch (error) {
-      console.error('Error al enviar reporte:', error);
-      throw error;
-    }
+    // Actualizar marca de tiempo de enfriamiento
+    localStorage.setItem(CLAVE_ENFRIAMIENTO, Date.now().toString());
   },
 
   puedeEnviarReporte(): { puedeEnviar: boolean; tiempoRestante: number } {
