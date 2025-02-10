@@ -1,4 +1,4 @@
-export interface Discount {
+export interface Descuento {
   id: string;
   marca_combustible: string;
   dia: string;
@@ -9,7 +9,7 @@ export interface Discount {
   url_fuente?: string;
 }
 
-export interface RecommendedDiscount {
+export interface DescuentoRecomendado {
   id: string;
   marca_combustible: string;
   dias: string[];

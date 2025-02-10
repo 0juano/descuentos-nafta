@@ -1,0 +1,29 @@
+id,marca_combustible,dia,metodo_pago,descuento,limite_gasto,limite_reintegro,frecuencia,creado_el,actualizado_el
+axion-1,AXION,Todos los días,BNA+,10,150000,15000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-10,AXION,Miércoles,Banco del Sol Débito,20,25000,5000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-2,AXION,Lunes y Martes,Tarjeta Personal Pay,20,25000,5000,Semanal,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-3,AXION,Viernes,Reba (Crédito American Express),20,25000,5000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-4,AXION,Todos los días,MODO + Patagonia (débito/crédito),10,150000,3000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-5,AXION,Viernes a Domingo,MODO + BBVA Crédito,30,15000,4500,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-6,AXION,Lunes y Viernes,Galicia MAS Mastercard Premier,10,60000,6000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-7,AXION,Sábado,MODO + Supervielle (Clientes Identité/cue),10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-8,AXION,Domingo,MODO + Comafi,10,40000,4000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+axion-9,AXION,Domingo,MODO + Buepp/Ciudad,15,67000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+general-1,Múltiples,Lunes,Galicia Mastercard + MODO,10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 18:19:12.909704+00
+general-2,Múltiples,Lunes,Galicia Mastercard Eminent + MODO,15,100000,15000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 18:19:16.797567+00
+general-3,Múltiples,Domingo,Crédito Ciudad/Buepp + MODO,10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 18:19:21.273016+00
+shell-1,SHELL,Lunes y Martes,Tarjeta Personal Pay,20,25000,5000,"Semanal (Shellbox + $1.000 extra)",2025-02-08 15:07:53.634864+00,2025-02-08 19:23:30.355113+00
+shell-2,SHELL,Todos los días,Tarjeta N1U,30,20000,6000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+shell-3,SHELL,Todos los días,MODO + BNA Crédito,25,80000,20000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-1,YPF,Lunes y Martes,Tarjeta Personal Pay,20,25000,5000,Semanal,2025-02-08 15:07:53.634864+00,2025-02-08 18:19:39.714471+00
+ypf-10,YPF,Sábado y Domingo,NaranjaX Débito desde APP YPF,30,30000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-11,YPF,Todos los días,Santander Visa Black/Platinum,20,30000,6000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-12,YPF,Jueves,Exclusivo desde APP YPF,30,67000,20000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-2,YPF,Lunes,Galicia Crédito Master Premium + MODO,15,100000,15000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-3,YPF,Lunes,Galicia Crédito Master + MODO,10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-4,YPF,Todos los días,MODO + BNA Crédito,15,100000,15000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-5,YPF,Todos los días,NaranjaX Crédito desde APP YPF,30,33333,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-6,YPF,Miércoles,MODO + Macro Visa Signature Selecta,30,33333,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-7,YPF,Miércoles,MODO + Macro Crédito Visa Platinum,30,33333,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-8,YPF,Domingo,MODO + Ciudad/Buepp,10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00
+ypf-9,YPF,Todos los días,MODO + Hipotecario Crédito,10,100000,10000,Mensual,2025-02-08 15:07:53.634864+00,2025-02-08 15:07:53.634864+00 

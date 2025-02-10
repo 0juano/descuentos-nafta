@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Filter from 'lucide-react/dist/esm/icons/filter';
 import CreditCard from 'lucide-react/dist/esm/icons/credit-card';
-import Calendar from 'lucide-react/dist/esm/icons/calendar';
 import Clock from 'lucide-react/dist/esm/icons/clock';
 import DollarSign from 'lucide-react/dist/esm/icons/dollar-sign';
-import Percent from 'lucide-react/dist/esm/icons/percent';
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
 import X from 'lucide-react/dist/esm/icons/x';
 import ArrowUpDown from 'lucide-react/dist/esm/icons/arrow-up-down';
@@ -18,7 +16,7 @@ import { supabase } from './lib/supabase';
 import { reportService } from './lib/reportService';
 import { FlagButton } from './components/FlagButton';
 import { ReportErrorModal, type ReportarErrorData } from './components/ReportErrorModal';
-import type { Discount } from './types';
+import type { Descuento } from './types';
 import { Toast } from './components/Toast';
 
 type CampoOrdenamiento = 'descuento' | 'limite_reintegro' | 'marca_combustible' | 'dia' | null;
@@ -35,7 +33,7 @@ interface DatosFormularioRecomendacion {
 }
 
 function App() {
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [descuentos, setDescuentos] = useState<Descuento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -59,7 +57,7 @@ function App() {
     frecuencia: '',
     url_fuente: ''
   });
-  const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Discount | null>(null);
+  const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Descuento | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: 'exito' | 'error' | 'info' } | null>(null);
 
@@ -157,10 +155,6 @@ function App() {
     setRecommendFormData(prev => ({ ...prev, limite_reintegro: formattedValue }));
   };
 
-  const formatNumber = (value: string) => {
-    return value ? Number(value).toLocaleString() : '';
-  };
-
   const toggleRecommendDay = (day: string) => {
     setRecommendFormData(prev => {
       const newDays = prev.dia.includes(day)
@@ -195,10 +189,10 @@ function App() {
   };
 
   useEffect(() => {
-    fetchDiscounts();
+    fetchDescuentos();
   }, [selectedBrands, selectedDays, sortField, sortDirection, searchQuery]);
 
-  async function fetchDiscounts() {
+  async function fetchDescuentos() {
     try {
       setLoading(true);
       setError(null);
@@ -253,11 +247,11 @@ function App() {
       
       if (supabaseError) throw supabaseError;
 
-      setDiscounts(data || []);
+      setDescuentos(data || []);
     } catch (error) {
       console.error('Error al cargar los descuentos:', error);
       setError(error instanceof Error ? error.message : 'Error al cargar los descuentos');
-      setDiscounts([]);
+      setDescuentos([]);
     } finally {
       setLoading(false);
     }
@@ -752,7 +746,7 @@ function App() {
           <div className="flex justify-center items-center py-12">
             <div className="text-center text-gray-500">Cargando descuentos...</div>
           </div>
-        ) : discounts.length === 0 ? (
+        ) : descuentos.length === 0 ? (
           <div className="flex justify-center items-center py-12">
             <div className="text-center text-gray-500">No se encontraron descuentos</div>
           </div>
@@ -808,40 +802,40 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {discounts.map((discount) => (
-                      <tr key={discount.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    {descuentos.map((descuento) => (
+                      <tr key={descuento.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-gray-900">
-                            {getBrandIcon(discount.marca_combustible)}
-                            {discount.marca_combustible}
+                            {getBrandIcon(descuento.marca_combustible)}
+                            {descuento.marca_combustible}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{discount.dia}</span>
+                          <span className="text-sm text-gray-500">{descuento.dia}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-gray-500">{discount.metodo_pago}</span>
+                          <span className="text-sm text-gray-500">{descuento.metodo_pago}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(discount.descuento)}`}>
-                              {discount.descuento}%
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(descuento.descuento)}`}>
+                              {descuento.descuento}%
                             </span>
                             <FlagButton
                               onClick={() => {
-                                setSelectedDiscountForReport(discount);
+                                setSelectedDiscountForReport(descuento);
                                 setIsReportModalOpen(true);
                               }}
                             />
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.limite_reintegro)}`}>
-                            ${discount.limite_reintegro.toLocaleString()}
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(descuento.limite_reintegro)}`}>
+                            ${descuento.limite_reintegro.toLocaleString()}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{discount.frecuencia}</span>
+                          <span className="text-sm text-gray-500">{descuento.frecuencia}</span>
                         </td>
                       </tr>
                     ))}
@@ -851,27 +845,27 @@ function App() {
             </div>
 
             <div className="md:hidden grid gap-4 sm:grid-cols-2">
-              {discounts.map((discount) => (
+              {descuentos.map((descuento) => (
                 <div
-                  key={discount.id}
+                  key={descuento.id}
                   className="bg-white rounded-lg shadow-sm transform transition-all duration-200 hover:shadow-md relative"
                 >
-                  <div className={`bg-gradient-to-r ${getBrandColor(discount.marca_combustible)} p-4 overflow-visible`}>
+                  <div className={`bg-gradient-to-r ${getBrandColor(descuento.marca_combustible)} p-4 overflow-visible`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">
-                          {getBrandIcon(discount.marca_combustible)}
-                          {discount.marca_combustible}
+                          {getBrandIcon(descuento.marca_combustible)}
+                          {descuento.marca_combustible}
                         </h3>
-                        <p className="text-gray-700 text-sm mt-1">{discount.dia}</p>
+                        <p className="text-gray-700 text-sm mt-1">{descuento.dia}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.descuento)}`}>
-                          <span className="text-lg font-bold">{discount.descuento}%</span>
+                        <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(descuento.descuento)}`}>
+                          <span className="text-lg font-bold">{descuento.descuento}%</span>
                         </div>
                         <FlagButton
                           onClick={() => {
-                            setSelectedDiscountForReport(discount);
+                            setSelectedDiscountForReport(descuento);
                             setIsReportModalOpen(true);
                           }}
                         />
@@ -884,7 +878,7 @@ function App() {
                       <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Método de Pago</p>
-                        <p className="text-sm text-gray-600">{discount.metodo_pago}</p>
+                        <p className="text-sm text-gray-600">{descuento.metodo_pago}</p>
                       </div>
                     </div>
 
@@ -892,8 +886,8 @@ function App() {
                       <DollarSign className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Límite de Reintegro</p>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.limite_reintegro)}`}>
-                          ${discount.limite_reintegro.toLocaleString()}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(descuento.limite_reintegro)}`}>
+                          ${descuento.limite_reintegro.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -902,7 +896,7 @@ function App() {
                       <Clock className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Frequency</p>
-                        <p className="text-sm text-gray-600">{discount.frecuencia}</p>
+                        <p className="text-sm text-gray-600">{descuento.frecuencia}</p>
                       </div>
                     </div>
                   </div>

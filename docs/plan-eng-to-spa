@@ -1,0 +1,218 @@
+Below is a step-by-step plan for creating a permanently frozen English branch, then converting the codebase and data to Spanish (Argentina) without slang. The plan includes Git branching steps, database changes, and code changes (both front-end and back-end). Use this as a blueprint in Cursor AI (or any IDE) to perform the actual changes.
+
+1. Branch and Freeze the English Version
+	1.	Create a new branch from main (assuming your default branch is main):
+
+git checkout main
+git pull
+git checkout -b en-version
+
+
+	2.	Push the branch so it’s stored on the remote:
+
+git push -u origin en-version
+
+	•	This en-version branch is now the frozen English snapshot.
+
+	3.	Return to main:
+
+git checkout main
+
+
+	4.	You will perform all translation changes on main. The en-version branch remains unmodified as a reference to the original English version.
+
+2. Database Table Changes
+
+Your table discounts will be renamed to descuentos, and its columns will be renamed to Spanish equivalents. If you’re doing this with Supabase migrations, you can create a new migration or modify an existing migration that does the rename. For example (in a new migration file):
+
+-- Step 1: Rename the table
+ALTER TABLE discounts RENAME TO descuentos;
+
+-- Step 2: Rename columns
+ALTER TABLE descuentos RENAME COLUMN fuel_brand TO marca_combustible;
+ALTER TABLE descuentos RENAME COLUMN day TO dia;
+ALTER TABLE descuentos RENAME COLUMN card_method TO metodo_pago;
+ALTER TABLE descuentos RENAME COLUMN discount TO descuento;
+ALTER TABLE descuentos RENAME COLUMN spending_limit TO limite_gasto;
+ALTER TABLE descuentos RENAME COLUMN reimbursement_limit TO limite_reintegro;
+ALTER TABLE descuentos RENAME COLUMN frequency TO frecuencia;
+ALTER TABLE descuentos RENAME COLUMN created_at TO creado_el;
+ALTER TABLE descuentos RENAME COLUMN updated_at TO actualizado_el;
+
+This mirrors the naming convention already present in the .sql migrations for Spanish translations (like spanish_translation.sql). Ensure that anywhere in your code that references these old column names is updated to the new Spanish names.
+
+3. Data Translation (Rows)
+
+You also need to translate the existing row values (e.g., “Monday”, “Every day”, “Weekly” → Spanish). For example:
+
+English	Spanish
+Monday	Lunes
+Tuesday	Martes
+Wednesday	Miércoles
+Thursday	Jueves
+Friday	Viernes
+Saturday	Sábado
+Sunday	Domingo
+Every day	Todos los días
+Monday & Tuesday	Lunes y Martes
+Friday to Sunday	Viernes a Domingo
+Weekly	Semanal
+Monthly	Mensual
+
+Approach:
+	1.	Option 1: Manually update each row in the DB, for example:
+
+UPDATE descuentos
+  SET dia = 'Lunes'
+  WHERE dia = 'Monday';
+UPDATE descuentos
+  SET dia = 'Lunes y Martes'
+  WHERE dia = 'Monday & Tuesday';
+...
+UPDATE descuentos
+  SET frecuencia = 'Mensual'
+  WHERE frecuencia = 'Monthly';
+UPDATE descuentos
+  SET frecuencia = 'Semanal'
+  WHERE frecuencia ILIKE '%weekly%';
+
+
+	2.	Option 2: Write a one-time script that queries each row and updates all day/frequency fields in a single pass. (This is recommended if you have many records or need to automate.)
+
+Either way, ensure you do not introduce Argentine slang. Keep them standard Spanish words (e.g., “Lunes a Viernes” for Monday to Friday, “Todos los días” for Every day, etc.).
+
+4. Front-End Code Changes
+
+Below are typical code changes you will need to make to ensure the front-end is also in Spanish:
+
+4.1 Variable and Column Name Updates
+	•	Anywhere in React code that references the old English DB fields must change to the new Spanish names. For example, in src/App.tsx, if you had code like:
+
+// Old (English-based):
+const [discounts, setDiscounts] = useState<Discount[]>([]);
+
+// Querying from 'discounts' with fields: fuel_brand, day, card_method, discount, ...
+supabase
+  .from('discounts')
+  .select('*')
+
+You must change it to:
+
+// New (Spanish-based):
+const [descuentos, setDescuentos] = useState<Descuento[]>([]);
+
+// Now referencing the new table & columns
+supabase
+  .from('descuentos')
+  .select('*')
+
+Also rename or remove any TypeScript interfaces referencing old column names. For instance, if you had:
+
+export interface Discount {
+  id: string;
+  fuel_brand: string;
+  day: string;
+  card_method: string;
+  discount: number;
+  spending_limit: number;
+  reimbursement_limit: number;
+  frequency: string;
+}
+
+Turn it into:
+
+export interface Descuento {
+  id: string;
+  marca_combustible: string;
+  dia: string;
+  metodo_pago: string;
+  descuento: number;
+  limite_gasto: number;
+  limite_reintegro: number;
+  frecuencia: string;
+}
+
+Note that you should rename the file itself if it was Discount.ts → Descuento.ts (or keep it in a shared file but rename the interface).
+
+4.2 UI Label and Text Changes
+
+All user-facing English text should also be changed to Spanish. For example:
+	•	Buttons labeled “Recommend Discount” → “Recomendar Descuento”.
+	•	“Payment Method” → “Método de Pago”.
+	•	“Frequency” → “Frecuencia”.
+	•	“Spending Limit” → “Límite de Gasto”.
+	•	“Reimbursement Limit” → “Límite de Reintegro”.
+	•	“Every day” → “Todos los días”.
+	•	“Weekly” → “Semanal”, “Monthly” → “Mensual”, etc.
+
+In App.tsx, watch for strings like:
+
+<th>Payment Method</th>
+
+Change to:
+
+<th>Método de Pago</th>
+
+4.3 Day Filter Logic
+
+If you have any day filters that expect English words, update them to Spanish. For example, if you have a days = ['Monday', 'Tuesday', ...], change to:
+
+const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+If you have “Every day,” change it to “Todos los días,” etc.
+
+4.4 Tooltip/Modal Text
+
+If you have text in modals like “Report an error” or “Evidence URL”, convert them to Spanish, e.g., “Reportar un error”, “URL de Evidencia”.
+Check the FlagButton, ReportErrorModal, Toast, etc. for any English strings.
+
+4.5 Provide Clear Snippets
+
+Here are a few direct code snippet examples:
+
+Before (English):
+
+<div className="space-y-4">
+  <label className="block mb-2 text-gray-700">Discount Percentage</label>
+  <input
+    type="number"
+    placeholder="Enter correct percentage"
+    // ...
+  />
+</div>
+
+After (Spanish):
+
+<div className="space-y-4">
+  <label className="block mb-2 text-gray-700">Porcentaje de Descuento</label>
+  <input
+    type="number"
+    placeholder="Ingrese el porcentaje correcto"
+    // ...
+  />
+</div>
+
+5. Testing and Verification
+	1.	Local Testing:
+	•	Run npm run dev (or your command) and ensure the UI labels, placeholders, days, and frequency fields are correct in Spanish.
+	2.	Database Check:
+	•	Ensure descuentos table now has the expected Spanish columns.
+	•	Ensure the day/frequency data values are now in Spanish.
+	•	Confirm no references to old column names in logs or console errors.
+	3.	Supabase:
+	•	Validate RLS policies remain valid after renaming. (If referencing the old table name in any policy, update it.)
+	4.	UI:
+	•	Check advanced functionalities like searching or filtering by day: the filter should now search for “Lunes,” not “Monday.”
+	5.	Push Changes:
+	•	Once tested, commit and push the changes to main.
+
+6. Summary
+	•	Branch: Keep a permanent en-version branch to preserve the original English code.
+	•	Migrate: On main, rename the discounts table to descuentos and rename columns to Spanish.
+	•	Translate Data: Convert row values from “Monday” → “Lunes,” “Monthly” → “Mensual,” etc.
+	•	Front-end Adjustments: Rename all references to the new table name, new Spanish columns, and UI text.
+	•	Test thoroughly before pushing.
+
+Following these steps will let you maintain a stable English reference while deploying a Spanish version on main. After this, the code and DB should be fully localized (Argentine Spanish, no slang).
+
+I already created a table called 'descuentos' in supabase. Same format as @discounts_rows_es.csv
