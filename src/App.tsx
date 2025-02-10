@@ -387,11 +387,10 @@ function App() {
       return;
     }
 
-    // Disable the button during submission
     setIsRecommendButtonDisabled(true);
 
     try {
-      const { data, error } = await supabase
+      const { error: supabaseError } = await supabase
         .from('recommended_discounts')
         .insert({
           marca_combustible: recommendFormData.marca_combustible[0], // Taking first selected brand
@@ -405,10 +404,10 @@ function App() {
         })
         .select();
 
-      if (error) {
-        console.error('Supabase error:', error);
-        setToast({ mensaje: `Error al enviar la recomendación: ${error.message}`, tipo: 'error' });
-        throw error;
+      if (supabaseError) {
+        console.error('Supabase error:', supabaseError);
+        setToast({ mensaje: `Error al enviar la recomendación: ${supabaseError.message}`, tipo: 'error' });
+        throw supabaseError;
       }
 
       setToast({ mensaje: '¡Recomendación enviada exitosamente!', tipo: 'exito' });
