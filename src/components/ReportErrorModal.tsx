@@ -252,51 +252,44 @@ export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
 
               {formData.error_descuento && (
                 <div>
-                  <label className="block mb-2 text-gray-700">
-                    Correct Discount Percentage
-                  </label>
+                  <label className="block mb-2 text-gray-700">Porcentaje de Descuento Correcto</label>
                   <div className="relative">
                     <input
                       type="number"
                       min="0"
                       max="100"
                       value={formData.descuento_sugerido || ''}
-                      onChange={(e) => {
-                        const value = e.target.valueAsNumber;
-                        if (isNaN(value) || value <= 100) {
-                          setFormData(prev => ({
-                            ...prev,
-                            descuento_sugerido: isNaN(value) ? undefined : value
-                          }));
-                        }
-                      }}
-                      className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 pr-8"
-                      placeholder="Enter correct percentage"
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        descuento_sugerido: e.target.value ? Number(e.target.value) : undefined
+                      }))}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Ej: 15"
                     />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">%</span>
+                    </div>
                   </div>
                 </div>
               )}
 
               {formData.error_reintegro && (
                 <div>
-                  <label className="block mb-2 text-gray-700">
-                    Correct Reimbursement Limit
-                  </label>
+                  <label className="block mb-2 text-gray-700">Límite de Reintegro Correcto</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
                     <input
-                      type="text"
-                      value={formData.reintegro_sugerido ? formData.reintegro_sugerido.toLocaleString('en-US') : ''}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        setFormData(prev => ({
-                          ...prev,
-                          reintegro_sugerido: value ? parseInt(value) : undefined
-                        }));
-                      }}
-                      className="w-full px-3 py-2 pl-7 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Enter correct limit"
+                      type="number"
+                      min="0"
+                      value={formData.reintegro_sugerido || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        reintegro_sugerido: e.target.value ? Number(e.target.value) : undefined
+                      }))}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Ej: 5000"
                     />
                   </div>
                 </div>
@@ -304,90 +297,81 @@ export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
 
               {formData.error_frecuencia && (
                 <div>
-                  <label className="block mb-2 text-gray-700">
-                    Correct Frequency
-                  </label>
+                  <label className="block mb-2 text-gray-700">Frecuencia Correcta</label>
                   <select
                     value={formData.frecuencia_sugerida || ''}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      frecuencia_sugerida: e.target.value
+                      frecuencia_sugerida: e.target.value || undefined
                     }))}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-3 pr-10 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   >
-                    <option value="">Select frequency</option>
+                    <option value="">Seleccionar frecuencia</option>
                     {frecuencias.map(freq => (
-                      <option key={freq} value={freq}>
-                        {freq}
-                      </option>
+                      <option key={freq} value={freq}>{freq}</option>
                     ))}
                   </select>
                 </div>
               )}
-            </div>
 
-            {/* Evidence URL */}
-            <div>
-              <label className="block mb-2 text-gray-700">
-                Evidence URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.url_evidencia}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  url_evidencia: e.target.value
-                }))}
-                className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="www.example.com"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Enter the website where you found this information
-              </p>
-            </div>
+              {/* Evidence URL */}
+              <div>
+                <label className="block mb-2 text-gray-700">
+                  URL de Evidencia
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.url_evidencia}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      url_evidencia: e.target.value
+                    }))}
+                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-3 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="https://ejemplo.com"
+                  />
+                </div>
+              </div>
 
-            {/* Comments */}
-            <div>
-              <label className="block mb-2 text-gray-700">
-                Additional Comments
-              </label>
-              <textarea
-                value={formData.comentarios || ''}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  comentarios: e.target.value
-                }))}
-                className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                rows={3}
-                placeholder="Any additional information..."
-              />
+              {/* Comments */}
+              <div>
+                <label className="block mb-2 text-gray-700">
+                  Comentarios Adicionales
+                </label>
+                <textarea
+                  value={formData.comentarios || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    comentarios: e.target.value || undefined
+                  }))}
+                  rows={3}
+                  className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Agregue cualquier información adicional aquí..."
+                />
+              </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm">
+              <div className="text-sm text-red-600">
                 {error}
               </div>
             )}
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="mt-6 flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`px-4 py-2 bg-indigo-600 text-white rounded-md ${
-                  isSubmitting
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-indigo-700'
-                }`}
+                className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                {isSubmitting ? 'Enviando...' : 'Enviar Reporte'}
               </button>
             </div>
           </form>
