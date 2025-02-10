@@ -17,7 +17,7 @@ import axionLogo from './icons/axion.webp';
 import { supabase } from './lib/supabase';
 import { reportService } from './lib/reportService';
 import { FlagButton } from './components/FlagButton';
-import { ReportErrorModal, type ReportErrorData } from './components/ReportErrorModal';
+import { ReportErrorModal, type ReportarErrorData } from './components/ReportErrorModal';
 import type { Discount } from './types';
 import { Toast } from './components/Toast';
 
@@ -183,16 +183,14 @@ function App() {
 
   const handleSearch = (value: string) => {
     try {
-      // Sanitize the search input by removing special characters and limiting length
       const sanitizedValue = value
-        .replace(/[^\w\s]/g, '') // Remove special characters, keep only words and spaces
+        .replace(/[^\w\s]/g, '')
         .trim()
-        .slice(0, 100); // Limit length to 100 characters
+        .slice(0, 100);
       setSearchQuery(sanitizedValue);
-      // No need to call fetchDiscounts here as it's triggered by the useEffect
     } catch (error) {
-      console.error('Error in search input:', error);
-      setError('Invalid search input. Please try again.');
+      console.error('Error en la búsqueda:', error);
+      setError('Entrada de búsqueda inválida. Por favor, intente de nuevo.');
     }
   };
 
@@ -205,9 +203,8 @@ function App() {
       setLoading(true);
       setError(null);
 
-      // Build the data query
       let query = supabase
-        .from('discounts')
+        .from('descuentos')
         .select('*');
 
       // Apply brand filter
@@ -229,25 +226,21 @@ function App() {
       // Apply search query if present and valid
       if (searchQuery.trim()) {
         const searchTerm = searchQuery.toLowerCase().trim();
-        // Validate search term length and content
         if (searchTerm.length <= 100 && /^[\w\s]*$/.test(searchTerm)) {
-          // Create a search filter that looks in all relevant fields
           query = query.or(
             `metodo_pago.ilike.%${searchTerm}%,` +
             `frecuencia.ilike.%${searchTerm}%`
           );
           
-          // If no brand filter is active, also search in marca_combustible
           if (selectedBrands.length === 0) {
             query = query.or(`marca_combustible.ilike.%${searchTerm}%`);
           }
           
-          // If no day filter is active, also search in dia
           if (selectedDays.length === 0) {
             query = query.or(`dia.ilike.%${searchTerm}%`);
           }
         } else {
-          throw new Error('Invalid search input. Please use only letters, numbers, and spaces.');
+          throw new Error('Búsqueda inválida. Por favor use solo letras, números y espacios.');
         }
       }
 
@@ -256,16 +249,15 @@ function App() {
         query = query.order(sortField, { ascending: sortDirection === 'asc' });
       }
 
-      // Execute the query
-      const { data, error } = await query;
+      const { data, error: supabaseError } = await query;
       
-      if (error) throw error;
+      if (supabaseError) throw supabaseError;
 
       setDiscounts(data || []);
     } catch (error) {
-      console.error('Error fetching discounts:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch discounts');
-      setDiscounts([]); // Clear discounts on error
+      console.error('Error al cargar los descuentos:', error);
+      setError(error instanceof Error ? error.message : 'Error al cargar los descuentos');
+      setDiscounts([]);
     } finally {
       setLoading(false);
     }
@@ -503,7 +495,7 @@ function App() {
   }, [lastScrollY]);
 
   // Add handler for report submission
-  const handleReportSubmit = async (data: ReportErrorData) => {
+  const handleReportSubmit = async (data: ReportarErrorData) => {
     try {
       await reportService.enviarReporte(data);
       setToast({ mensaje: 'Reporte enviado exitosamente', tipo: 'exito' });
@@ -529,7 +521,7 @@ function App() {
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Fuel Discounts</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Descuentos de Combustible</h1>
             <button
               onClick={handleRecommendClick}
               disabled={isRecommendButtonDisabled}
@@ -542,9 +534,9 @@ function App() {
               <Plus className="h-4 w-4 mr-2" />
               {isRecommendButtonDisabled 
                 ? cooldownTimeLeft > 0 
-                  ? `Please wait ${cooldownTimeLeft}s...` 
-                  : 'Processing...'
-                : 'Recommend Discount'}
+                  ? `Espere ${cooldownTimeLeft}s...` 
+                  : 'Procesando...'
+                : 'Recomendar Descuento'}
             </button>
           </div>
         </div>
@@ -564,7 +556,7 @@ function App() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search..."
+                  placeholder="Buscar..."
                   className="block w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -583,7 +575,7 @@ function App() {
                 <div className="absolute right-0 mt-1 w-72 bg-white rounded-md shadow-lg z-50 border border-gray-200">
                   <div className="p-4">
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Brands</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Marcas</label>
                       <div className="space-y-2">
                         {brands.map(brand => (
                           <label key={brand} className="flex items-center">
@@ -603,7 +595,7 @@ function App() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Days</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Días</label>
                       <div className="space-y-2">
                         {days.map(day => (
                           <label key={day} className="flex items-center">
@@ -635,7 +627,7 @@ function App() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search discounts, cards, brands..."
+                  placeholder="Buscar descuentos, tarjetas, marcas..."
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
               </div>
@@ -644,7 +636,7 @@ function App() {
             <div className="flex flex-row items-center gap-4">
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Filters:</span>
+                <span className="text-sm font-medium text-gray-700">Filtros:</span>
               </div>
               <div className="flex flex-wrap gap-4">
                 <div className="relative" ref={brandDropdownRef}>
@@ -654,7 +646,7 @@ function App() {
                   >
                     <span className="truncate">
                       {selectedBrands.length === 0 
-                        ? 'Select Brands'
+                        ? 'Seleccionar Marcas'
                         : selectedBrands.join(', ')}
                     </span>
                     <ChevronDown className="h-4 w-4 ml-2" />
@@ -688,7 +680,7 @@ function App() {
                   >
                     <span className="truncate">
                       {selectedDays.length === 0 
-                        ? 'Select Days'
+                        ? 'Seleccionar Días'
                         : selectedDays.map(day => getAbbreviatedDay(day)).join(', ')}
                     </span>
                     <ChevronDown className="h-4 w-4 ml-2" />
@@ -758,11 +750,11 @@ function App() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-center text-gray-500">Loading discounts...</div>
+            <div className="text-center text-gray-500">Cargando descuentos...</div>
           </div>
         ) : discounts.length === 0 ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-center text-gray-500">No discounts found</div>
+            <div className="text-center text-gray-500">No se encontraron descuentos</div>
           </div>
         ) : (
           <>
@@ -891,7 +883,7 @@ function App() {
                     <div className="flex items-start gap-3">
                       <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Payment Method</p>
+                        <p className="text-sm font-medium text-gray-900">Método de Pago</p>
                         <p className="text-sm text-gray-600">{discount.metodo_pago}</p>
                       </div>
                     </div>
@@ -899,7 +891,7 @@ function App() {
                     <div className="flex items-start gap-3">
                       <DollarSign className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Reimburse Limit</p>
+                        <p className="text-sm font-medium text-gray-900">Límite de Reintegro</p>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.limite_reintegro)}`}>
                           ${discount.limite_reintegro.toLocaleString()}
                         </span>
@@ -937,7 +929,7 @@ function App() {
           >
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Recommend a New Discount</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Recomendar Nuevo Descuento</h2>
                 <button
                   onClick={() => setIsRecommendModalOpen(false)}
                   className="text-gray-400 hover:text-gray-500"
@@ -949,7 +941,7 @@ function App() {
               <form onSubmit={handleRecommendSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Fuel Brand *
+                    Marca de Combustible *
                   </label>
                   <div className="relative" ref={recommendBrandDropdownRef}>
                     <button
@@ -1004,7 +996,7 @@ function App() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Days *
+                    Días *
                   </label>
                   <div className="relative" ref={recommendDayDropdownRef}>
                     <button
@@ -1056,7 +1048,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Payment Method *
+                    Método de Pago *
                   </label>
                   <input
                     type="text"
@@ -1069,7 +1061,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Discount Percentage *
+                    Porcentaje de Descuento *
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <input
@@ -1077,7 +1069,7 @@ function App() {
                       value={recommendFormData.descuento}
                       onChange={(e) => handleDiscountChange(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="Enter discount percentage"
+                      placeholder="Ingrese el porcentaje"
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 sm:text-sm">%</span>
@@ -1087,7 +1079,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Reimbursement Limit *
+                    Límite de Reintegro *
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1098,29 +1090,29 @@ function App() {
                       value={recommendFormData.limite_reintegro}
                       onChange={(e) => handleReimbursementLimitChange(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="Enter reimbursement limit"
+                      placeholder="Ingrese el límite"
                     />
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Frequency *
+                    Frecuencia *
                   </label>
                   <select
                     value={recommendFormData.frecuencia}
                     onChange={(e) => setRecommendFormData(prev => ({ ...prev, frecuencia: e.target.value }))}
                     className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                   >
-                    <option value="">Select frequency</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="">Seleccionar frecuencia</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensual">Mensual</option>
                   </select>
                 </div>
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Source URL
+                    URL de Origen
                   </label>
                   <div className="mt-1 flex rounded-md shadow-sm">
                     <div className="relative flex items-stretch flex-grow focus-within:z-10">
@@ -1132,7 +1124,7 @@ function App() {
                         value={recommendFormData.url_fuente}
                         onChange={(e) => setRecommendFormData(prev => ({ ...prev, url_fuente: e.target.value }))}
                         className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        placeholder="https://example.com"
+                        placeholder="https://ejemplo.com"
                       />
                     </div>
                   </div>
@@ -1146,7 +1138,7 @@ function App() {
                       isRecommendButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
-                    {isRecommendButtonDisabled ? 'Submitting...' : 'Recommend Discount'}
+                    {isRecommendButtonDisabled ? 'Enviando...' : 'Recomendar Descuento'}
                   </button>
                 </div>
               </form>
