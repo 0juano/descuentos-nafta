@@ -1,26 +1,26 @@
 export interface Discount {
   id: string;
-  fuel_brand: string;
-  day: string;
-  card_method: string;
-  discount: number;
-  reimbursement_limit: number;
-  frequency: string;
-  source_url?: string;
+  marca_combustible: string;
+  dia: string;
+  metodo_pago: string;
+  descuento: number;
+  limite_reintegro: number;
+  frecuencia: string;
+  url_fuente?: string;
 }
 
 export interface RecommendedDiscount {
   id: string;
-  fuel_brand: string;
-  days: string[];
-  payment_method: string;
-  discount_percentage: number;
-  reimbursement_limit: number;
-  frequency: string;
-  source_url?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  created_at?: string;
-  updated_at?: string;
+  marca_combustible: string;
+  dias: string[];
+  metodo_pago: string;
+  porcentaje_descuento: number;
+  limite_reintegro: number;
+  frecuencia: string;
+  url_fuente?: string;
+  estado: 'pendiente' | 'aprobado' | 'rechazado';
+  creado_el?: string;
+  actualizado_el?: string;
 }
 
-export type FuelBrand = 'YPF' | 'SHELL' | 'AXION' | 'Multiple';
+export type MarcaCombustible = 'YPF' | 'SHELL' | 'AXION' | 'Multiple';

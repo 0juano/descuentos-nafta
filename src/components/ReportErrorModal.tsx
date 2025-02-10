@@ -1,51 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react';
 import X from 'lucide-react/dist/esm/icons/x';
 
-interface ReportErrorModalProps {
+interface ReportarErrorModalProps {
   isOpen: boolean;
   onClose: () => void;
   discountId: string;
-  onSubmit: (data: ReportErrorData) => Promise<void>;
+  onSubmit: (data: ReportarErrorData) => Promise<void>;
 }
 
-export interface ReportErrorData {
+export interface ReportarErrorData {
   discount_id: string;
-  days_error: boolean;
-  discount_error: boolean;
-  reimbursement_error: boolean;
-  frequency_error: boolean;
-  suggested_days: string[];
-  suggested_discount?: number;
-  suggested_reimbursement?: number;
-  suggested_frequency?: string;
-  evidence_url: string;
-  comments?: string;
-  is_discontinued: boolean;
+  error_dias: boolean;
+  error_descuento: boolean;
+  error_reintegro: boolean;
+  error_frecuencia: boolean;
+  dias_sugeridos: string[];
+  descuento_sugerido?: number;
+  reintegro_sugerido?: number;
+  frecuencia_sugerida?: string;
+  url_evidencia: string;
+  comentarios?: string;
+  esta_discontinuado: boolean;
 }
 
-export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
+export const ReportErrorModal: React.FC<ReportarErrorModalProps> = ({
   isOpen,
   onClose,
   discountId,
   onSubmit,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [formData, setFormData] = useState<ReportErrorData>({
+  const [formData, setFormData] = useState<ReportarErrorData>({
     discount_id: discountId,
-    days_error: false,
-    discount_error: false,
-    reimbursement_error: false,
-    frequency_error: false,
-    suggested_days: [],
-    evidence_url: '',
-    is_discontinued: false,
+    error_dias: false,
+    error_descuento: false,
+    error_reintegro: false,
+    error_frecuencia: false,
+    dias_sugeridos: [],
+    url_evidencia: '',
+    esta_discontinuado: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const frequencies = ['Weekly', 'Monthly'];
+  const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const frecuencias = ['Semanal', 'Mensual'];
 
   // Add escape key handler
   useEffect(() => {
@@ -74,17 +74,17 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
   const handleDiscontinuedChange = (checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      is_discontinued: checked,
+      esta_discontinuado: checked,
       // Reset error flags if discontinued is checked
-      days_error: checked ? false : prev.days_error,
-      discount_error: checked ? false : prev.discount_error,
-      reimbursement_error: checked ? false : prev.reimbursement_error,
-      frequency_error: checked ? false : prev.frequency_error,
+      error_dias: checked ? false : prev.error_dias,
+      error_descuento: checked ? false : prev.error_descuento,
+      error_reintegro: checked ? false : prev.error_reintegro,
+      error_frecuencia: checked ? false : prev.error_frecuencia,
       // Reset suggested values
-      suggested_days: checked ? [] : prev.suggested_days,
-      suggested_discount: checked ? undefined : prev.suggested_discount,
-      suggested_reimbursement: checked ? undefined : prev.suggested_reimbursement,
-      suggested_frequency: checked ? undefined : prev.suggested_frequency,
+      dias_sugeridos: checked ? [] : prev.dias_sugeridos,
+      descuento_sugerido: checked ? undefined : prev.descuento_sugerido,
+      reintegro_sugerido: checked ? undefined : prev.reintegro_sugerido,
+      frecuencia_sugerida: checked ? undefined : prev.frecuencia_sugerida,
     }));
   };
 
@@ -93,22 +93,22 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
     setError(null);
 
     // Only validate error types if not discontinued
-    if (!formData.is_discontinued && 
-        !formData.days_error && 
-        !formData.discount_error && 
-        !formData.reimbursement_error && 
-        !formData.frequency_error) {
-      setError('Please select at least one error type');
+    if (!formData.esta_discontinuado && 
+        !formData.error_dias && 
+        !formData.error_descuento && 
+        !formData.error_reintegro && 
+        !formData.error_frecuencia) {
+      setError('Por favor seleccione al menos un tipo de error');
       return;
     }
 
-    if (!formData.evidence_url) {
-      setError('Evidence URL is required');
+    if (!formData.url_evidencia) {
+      setError('La URL de evidencia es requerida');
       return;
     }
 
     // Validate URL format
-    let url = formData.evidence_url;
+    let url = formData.url_evidencia;
     // If URL doesn't start with protocol, add https://
     if (!/^https?:\/\//i.test(url)) {
       url = 'https://' + url;
@@ -118,24 +118,24 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
     try {
       new URL(url);
     } catch {
-      setError('Please enter a valid website address');
+      setError('Por favor ingrese una dirección web válida');
       return;
     }
 
     // Validate suggested days if days_error is checked
-    if (formData.days_error && (!formData.suggested_days || formData.suggested_days.length === 0)) {
-      setError('Please select at least one correct day');
+    if (formData.error_dias && (!formData.dias_sugeridos || formData.dias_sugeridos.length === 0)) {
+      setError('Por favor seleccione al menos un día correcto');
       return;
     }
 
     // Validate discount percentage doesn't exceed 100%
-    if (formData.discount_error && formData.suggested_discount !== undefined) {
-      if (formData.suggested_discount > 100) {
-        setError('Discount percentage cannot exceed 100%');
+    if (formData.error_descuento && formData.descuento_sugerido !== undefined) {
+      if (formData.descuento_sugerido > 100) {
+        setError('El porcentaje de descuento no puede exceder el 100%');
         return;
       }
-      if (formData.suggested_discount < 0) {
-        setError('Discount percentage cannot be negative');
+      if (formData.descuento_sugerido < 0) {
+        setError('El porcentaje de descuento no puede ser negativo');
         return;
       }
     }
@@ -145,12 +145,12 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       // Update the URL with protocol if it was added
       const dataToSubmit = {
         ...formData,
-        evidence_url: url
+        url_evidencia: url
       };
       await onSubmit(dataToSubmit);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit report');
+      setError(err instanceof Error ? err.message : 'Error al enviar el reporte');
     } finally {
       setIsSubmitting(false);
     }
@@ -169,11 +169,11 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Report Discount Error</h2>
+            <h2 className="text-xl font-bold text-gray-900">Reportar Error en Descuento</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
-              aria-label="Close"
+              aria-label="Cerrar"
             >
               <X className="w-5 h-5" />
             </button>
@@ -185,37 +185,37 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
               <label className="flex items-center space-x-2 text-gray-700">
                 <input
                   type="checkbox"
-                  checked={formData.is_discontinued}
+                  checked={formData.esta_discontinuado}
                   onChange={(e) => handleDiscontinuedChange(e.target.checked)}
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <span>This discount has been discontinued</span>
+                <span>Este descuento ha sido discontinuado</span>
               </label>
             </div>
 
             {/* Error Types Section */}
-            <div className={formData.is_discontinued ? 'opacity-50' : ''}>
-              <div className="mb-2 text-gray-700">What's incorrect?</div>
+            <div className={formData.esta_discontinuado ? 'opacity-50' : ''}>
+              <div className="mb-2 text-gray-700">¿Qué es incorrecto?</div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { key: 'days_error', label: 'Days' },
-                  { key: 'discount_error', label: 'Discount Percentage' },
-                  { key: 'reimbursement_error', label: 'Reimbursement Limit' },
-                  { key: 'frequency_error', label: 'Frequency' }
+                  { key: 'error_dias', label: 'Días' },
+                  { key: 'error_descuento', label: 'Porcentaje de Descuento' },
+                  { key: 'error_reintegro', label: 'Límite de Reintegro' },
+                  { key: 'error_frecuencia', label: 'Frecuencia' }
                 ].map(({ key, label }) => (
-                  <label key={key} className={`flex items-center space-x-2 text-gray-700 ${formData.is_discontinued ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <label key={key} className={`flex items-center space-x-2 text-gray-700 ${formData.esta_discontinuado ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
                       checked={formData[key as keyof typeof formData] as boolean}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         [key]: e.target.checked,
-                        ...(key === 'days_error' && { suggested_days: e.target.checked ? [] : prev.suggested_days })
+                        ...(key === 'error_dias' && { dias_sugeridos: e.target.checked ? [] : prev.dias_sugeridos })
                       }))}
-                      disabled={formData.is_discontinued}
+                      disabled={formData.esta_discontinuado}
                       className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className={formData.is_discontinued ? 'text-gray-400' : ''}>{label}</span>
+                    <span className={formData.esta_discontinuado ? 'text-gray-400' : ''}>{label}</span>
                   </label>
                 ))}
               </div>
@@ -223,34 +223,34 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
 
             {/* Conditional Input Fields */}
             <div className="space-y-4">
-              {formData.days_error && (
+              {formData.error_dias && (
                 <div>
-                  <label className="block mb-2 text-gray-700">Correct Days</label>
+                  <label className="block mb-2 text-gray-700">Días Correctos</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {days.map(day => (
-                      <label key={day} className="flex items-center space-x-2 text-gray-700">
+                    {dias.map(dia => (
+                      <label key={dia} className="flex items-center space-x-2 text-gray-700">
                         <input
                           type="checkbox"
-                          checked={formData.suggested_days?.includes(day) || false}
+                          checked={formData.dias_sugeridos?.includes(dia) || false}
                           onChange={(e) => {
                             const newDays = e.target.checked
-                              ? [...(formData.suggested_days || []), day]
-                              : (formData.suggested_days || []).filter(d => d !== day);
+                              ? [...(formData.dias_sugeridos || []), dia]
+                              : (formData.dias_sugeridos || []).filter(d => d !== dia);
                             setFormData(prev => ({
                               ...prev,
-                              suggested_days: newDays
+                              dias_sugeridos: newDays
                             }));
                           }}
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
-                        <span>{day}</span>
+                        <span>{dia}</span>
                       </label>
                     ))}
                   </div>
                 </div>
               )}
 
-              {formData.discount_error && (
+              {formData.error_descuento && (
                 <div>
                   <label className="block mb-2 text-gray-700">
                     Correct Discount Percentage
@@ -260,13 +260,13 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                       type="number"
                       min="0"
                       max="100"
-                      value={formData.suggested_discount || ''}
+                      value={formData.descuento_sugerido || ''}
                       onChange={(e) => {
                         const value = e.target.valueAsNumber;
                         if (isNaN(value) || value <= 100) {
                           setFormData(prev => ({
                             ...prev,
-                            suggested_discount: isNaN(value) ? undefined : value
+                            descuento_sugerido: isNaN(value) ? undefined : value
                           }));
                         }
                       }}
@@ -278,7 +278,7 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                 </div>
               )}
 
-              {formData.reimbursement_error && (
+              {formData.error_reintegro && (
                 <div>
                   <label className="block mb-2 text-gray-700">
                     Correct Reimbursement Limit
@@ -287,12 +287,12 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                     <input
                       type="text"
-                      value={formData.suggested_reimbursement ? formData.suggested_reimbursement.toLocaleString('en-US') : ''}
+                      value={formData.reintegro_sugerido ? formData.reintegro_sugerido.toLocaleString('en-US') : ''}
                       onChange={(e) => {
                         const value = e.target.value.replace(/[^0-9]/g, '');
                         setFormData(prev => ({
                           ...prev,
-                          suggested_reimbursement: value ? parseInt(value) : undefined
+                          reintegro_sugerido: value ? parseInt(value) : undefined
                         }));
                       }}
                       className="w-full px-3 py-2 pl-7 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
@@ -302,21 +302,21 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                 </div>
               )}
 
-              {formData.frequency_error && (
+              {formData.error_frecuencia && (
                 <div>
                   <label className="block mb-2 text-gray-700">
                     Correct Frequency
                   </label>
                   <select
-                    value={formData.suggested_frequency || ''}
+                    value={formData.frecuencia_sugerida || ''}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
-                      suggested_frequency: e.target.value
+                      frecuencia_sugerida: e.target.value
                     }))}
                     className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                   >
                     <option value="">Select frequency</option>
-                    {frequencies.map(freq => (
+                    {frecuencias.map(freq => (
                       <option key={freq} value={freq}>
                         {freq}
                       </option>
@@ -334,10 +334,10 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
               <input
                 type="text"
                 required
-                value={formData.evidence_url}
+                value={formData.url_evidencia}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  evidence_url: e.target.value
+                  url_evidencia: e.target.value
                 }))}
                 className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="www.example.com"
@@ -353,10 +353,10 @@ export const ReportErrorModal: React.FC<ReportErrorModalProps> = ({
                 Additional Comments
               </label>
               <textarea
-                value={formData.comments || ''}
+                value={formData.comentarios || ''}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  comments: e.target.value
+                  comentarios: e.target.value
                 }))}
                 className="w-full px-3 py-2 border rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 rows={3}

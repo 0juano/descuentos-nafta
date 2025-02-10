@@ -51,15 +51,15 @@ export const FlagButton: React.FC<FlagButtonProps> = ({ onClick, className = '' 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setShowTooltip(false)}
         className={`p-1 rounded-full hover:bg-red-50 transition-colors duration-200 group ${className}`}
-        aria-label="Report an error"
+        aria-label="Reportar un error"
       >
         <Flag className="w-4 h-4 text-red-500 group-hover:text-red-600" />
-        <span className="sr-only">Report an error</span>
+        <span className="sr-only">Reportar un error</span>
         
         {/* Tooltip */}
         {showTooltip && (
           <div className={getTooltipClasses()}>
-            Report an error
+            Reportar un error
           </div>
         )}
       </button>

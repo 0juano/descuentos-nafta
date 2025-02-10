@@ -1,67 +1,67 @@
 /*
-  # Create Fuel Discounts Schema
+  # Crear Esquema de Descuentos de Combustible
 
-  1. New Tables
-    - `discounts`
-      - `id` (text, primary key) - Unique identifier for each discount
-      - `fuel_brand` (text) - Brand offering the discount (YPF, SHELL, AXION, Multiple)
-      - `day` (text) - Day(s) when discount is applicable
-      - `card_method` (text) - Payment method required for discount
-      - `discount` (integer) - Discount percentage
-      - `spending_limit` (integer) - Maximum spending amount
-      - `reimbursement_limit` (integer) - Maximum reimbursement amount
-      - `frequency` (text) - Frequency of the discount (Weekly, Monthly, etc.)
-      - `created_at` (timestamptz) - Record creation timestamp
-      - `updated_at` (timestamptz) - Record update timestamp
+  1. Nuevas Tablas
+    - `descuentos`
+      - `id` (text, primary key) - Identificador único para cada descuento
+      - `marca_combustible` (text) - Marca que ofrece el descuento (YPF, SHELL, AXION, Multiple)
+      - `dia` (text) - Día(s) cuando aplica el descuento
+      - `metodo_pago` (text) - Método de pago requerido para el descuento
+      - `descuento` (integer) - Porcentaje de descuento
+      - `limite_gasto` (integer) - Monto máximo de gasto
+      - `limite_reintegro` (integer) - Monto máximo de reintegro
+      - `frecuencia` (text) - Frecuencia del descuento (Semanal, Mensual, etc.)
+      - `creado_el` (timestamptz) - Marca de tiempo de creación del registro
+      - `actualizado_el` (timestamptz) - Marca de tiempo de actualización del registro
 
-  2. Security
-    - Enable RLS on `discounts` table
-    - Add policies for public read access
-    - Add policies for authenticated users to manage discounts
+  2. Seguridad
+    - Habilitar RLS en la tabla `descuentos`
+    - Agregar políticas para acceso público de lectura
+    - Agregar políticas para que usuarios autenticados gestionen descuentos
 */
 
--- Create discounts table
-CREATE TABLE IF NOT EXISTS discounts (
+-- Crear tabla de descuentos
+CREATE TABLE IF NOT EXISTS descuentos (
   id text PRIMARY KEY,
-  fuel_brand text NOT NULL,
-  day text NOT NULL,
-  card_method text NOT NULL,
-  discount integer NOT NULL,
-  spending_limit integer NOT NULL,
-  reimbursement_limit integer NOT NULL,
-  frequency text NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  marca_combustible text NOT NULL,
+  dia text NOT NULL,
+  metodo_pago text NOT NULL,
+  descuento integer NOT NULL,
+  limite_gasto integer NOT NULL,
+  limite_reintegro integer NOT NULL,
+  frecuencia text NOT NULL,
+  creado_el timestamptz DEFAULT now(),
+  actualizado_el timestamptz DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE discounts ENABLE ROW LEVEL SECURITY;
+-- Habilitar RLS
+ALTER TABLE descuentos ENABLE ROW LEVEL SECURITY;
 
--- Create policies
-CREATE POLICY "Allow public read access"
-  ON discounts
+-- Crear políticas
+CREATE POLICY "Permitir acceso público de lectura"
+  ON descuentos
   FOR SELECT
   TO public
   USING (true);
 
-CREATE POLICY "Allow authenticated users to manage discounts"
-  ON discounts
+CREATE POLICY "Permitir a usuarios autenticados gestionar descuentos"
+  ON descuentos
   FOR ALL
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at()
+-- Crear función para actualizar marca de tiempo actualizado_el
+CREATE OR REPLACE FUNCTION actualizar_actualizado_el()
 RETURNS TRIGGER AS $$
 BEGIN
-  NEW.updated_at = now();
+  NEW.actualizado_el = now();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at
-CREATE TRIGGER update_discounts_updated_at
-  BEFORE UPDATE ON discounts
+-- Crear trigger para actualizar automáticamente actualizado_el
+CREATE TRIGGER actualizar_descuentos_actualizado_el
+  BEFORE UPDATE ON descuentos
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at();
+  EXECUTE FUNCTION actualizar_actualizado_el();

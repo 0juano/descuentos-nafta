@@ -1,67 +1,67 @@
 import { supabase } from './supabase';
 import type { ReportErrorData } from '../components/ReportErrorModal';
 
-const COOLDOWN_KEY = 'last_error_report_time';
-const COOLDOWN_DURATION = 30 * 1000; // 30 seconds in milliseconds
+const CLAVE_ENFRIAMIENTO = 'ultimo_reporte_error_tiempo';
+const DURACION_ENFRIAMIENTO = 30 * 1000; // 30 segundos en milisegundos
 
 export const reportService = {
-  async submitReport(data: ReportErrorData): Promise<void> {
-    // Check cooldown
-    const lastReportTime = localStorage.getItem(COOLDOWN_KEY);
-    if (lastReportTime) {
-      const timeSinceLastReport = Date.now() - parseInt(lastReportTime);
-      if (timeSinceLastReport < COOLDOWN_DURATION) {
-        throw new Error(`Please wait ${Math.ceil((COOLDOWN_DURATION - timeSinceLastReport) / 1000 / 60)} minutes before submitting another report.`);
+  async enviarReporte(data: ReportErrorData): Promise<void> {
+    // Verificar enfriamiento
+    const ultimoTiempoReporte = localStorage.getItem(CLAVE_ENFRIAMIENTO);
+    if (ultimoTiempoReporte) {
+      const tiempoDesdeUltimoReporte = Date.now() - parseInt(ultimoTiempoReporte);
+      if (tiempoDesdeUltimoReporte < DURACION_ENFRIAMIENTO) {
+        throw new Error(`Por favor espere ${Math.ceil((DURACION_ENFRIAMIENTO - tiempoDesdeUltimoReporte) / 1000 / 60)} minutos antes de enviar otro reporte.`);
       }
     }
 
     try {
       const { error } = await supabase
-        .from('reported_errors')
+        .from('errores_reportados')
         .insert([{
-          discount_id: data.discount_id,
-          is_discontinued: data.is_discontinued,
-          days_error: data.days_error,
-          discount_error: data.discount_error,
-          reimbursement_error: data.reimbursement_error,
-          frequency_error: data.frequency_error,
-          suggested_days: data.suggested_days,
-          suggested_discount: data.suggested_discount,
-          suggested_reimbursement: data.suggested_reimbursement,
-          suggested_frequency: data.suggested_frequency,
-          evidence_url: data.evidence_url,
-          comments: data.comments
+          id_descuento: data.discount_id,
+          esta_discontinuado: data.is_discontinued,
+          error_dias: data.days_error,
+          error_descuento: data.discount_error,
+          error_reintegro: data.reimbursement_error,
+          error_frecuencia: data.frequency_error,
+          dias_sugeridos: data.suggested_days,
+          descuento_sugerido: data.suggested_discount,
+          reintegro_sugerido: data.suggested_reimbursement,
+          frecuencia_sugerida: data.suggested_frequency,
+          url_evidencia: data.evidence_url,
+          comentarios: data.comments
         }]);
 
       if (error) {
-        if (error.message?.includes('pending report already exists')) {
-          throw new Error('A report for this discount is already pending review.');
+        if (error.message?.includes('ya existe un reporte pendiente')) {
+          throw new Error('Ya existe un reporte pendiente de revisión para este descuento.');
         }
         throw error;
       }
 
-      // Update cooldown timestamp
-      localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+      // Actualizar marca de tiempo de enfriamiento
+      localStorage.setItem(CLAVE_ENFRIAMIENTO, Date.now().toString());
     } catch (error) {
-      console.error('Error submitting report:', error);
+      console.error('Error al enviar reporte:', error);
       throw error;
     }
   },
 
-  canSubmitReport(): { canSubmit: boolean; timeLeft: number } {
-    const lastReportTime = localStorage.getItem(COOLDOWN_KEY);
-    if (!lastReportTime) {
-      return { canSubmit: true, timeLeft: 0 };
+  puedeEnviarReporte(): { puedeEnviar: boolean; tiempoRestante: number } {
+    const ultimoTiempoReporte = localStorage.getItem(CLAVE_ENFRIAMIENTO);
+    if (!ultimoTiempoReporte) {
+      return { puedeEnviar: true, tiempoRestante: 0 };
     }
 
-    const timeSinceLastReport = Date.now() - parseInt(lastReportTime);
-    if (timeSinceLastReport >= COOLDOWN_DURATION) {
-      return { canSubmit: true, timeLeft: 0 };
+    const tiempoDesdeUltimoReporte = Date.now() - parseInt(ultimoTiempoReporte);
+    if (tiempoDesdeUltimoReporte >= DURACION_ENFRIAMIENTO) {
+      return { puedeEnviar: true, tiempoRestante: 0 };
     }
 
     return {
-      canSubmit: false,
-      timeLeft: Math.ceil((COOLDOWN_DURATION - timeSinceLastReport) / 1000)
+      puedeEnviar: false,
+      tiempoRestante: Math.ceil((DURACION_ENFRIAMIENTO - tiempoDesdeUltimoReporte) / 1000)
     };
   }
 }; 

@@ -70,7 +70,7 @@ function App() {
   const recommendBrandDropdownRef = useRef<HTMLDivElement>(null);
 
   const brands = ['YPF', 'SHELL', 'AXION', 'Multiple'];
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Every day'];
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo', 'Todos los días'];
 
   const [recommendBrandDropdownOpen, setRecommendBrandDropdownOpen] = useState(false);
 
@@ -80,14 +80,14 @@ function App() {
 
   // Add abbreviation mapping
   const dayAbbreviations: Record<string, string> = {
-    'Monday': 'Mon',
-    'Tuesday': 'Tue',
-    'Wednesday': 'Wed',
-    'Thursday': 'Thu',
-    'Friday': 'Fri',
-    'Saturday': 'Sat',
-    'Sunday': 'Sun',
-    'Every day': 'Every day'
+    'Lunes': 'Lun',
+    'Martes': 'Mar',
+    'Miércoles': 'Mié',
+    'Jueves': 'Jue',
+    'Viernes': 'Vie',
+    'Sábado': 'Sáb',
+    'Domingo': 'Dom',
+    'Todos los días': 'Todos'
   };
 
   // Add helper function to abbreviate days
@@ -167,13 +167,13 @@ function App() {
         ? prev.day.filter((d: string) => d !== day)
         : [...prev.day, day];
       
-      // If "Every day" is selected, clear other selections
-      if (day === 'Every day') {
-        return { ...prev, day: newDays.includes('Every day') ? ['Every day'] : [] };
+      // If "Todos los días" is selected, clear other selections
+      if (day === 'Todos los días') {
+        return { ...prev, day: newDays.includes('Todos los días') ? ['Todos los días'] : [] };
       }
       
-      // If another day is selected and "Every day" was previously selected, remove it
-      if (prev.day.includes('Every day')) {
+      // If another day is selected and "Todos los días" was previously selected, remove it
+      if (prev.day.includes('Todos los días')) {
         return { ...prev, day: [day] };
       }
       
@@ -218,7 +218,7 @@ function App() {
       // Apply day filter
       if (selectedDays.length > 0) {
         const dayConditions = selectedDays.map(day => {
-          if (day === 'Every day') {
+          if (day === 'Todos los días') {
             return `day.ilike.%${day}%`;
           }
           return `day.ilike.%${day}%`;
@@ -325,12 +325,12 @@ function App() {
   const handleDaySelect = (day: string) => {
     setSelectedDays(prev => {
       let newDays;
-      if (day === 'Every day') {
-        newDays = prev.includes(day) ? [] : ['Every day'];
+      if (day === 'Todos los días') {
+        newDays = prev.includes(day) ? [] : ['Todos los días'];
       } else {
         newDays = prev.includes(day)
           ? prev.filter(d => d !== day)
-          : prev.includes('Every day')
+          : prev.includes('Todos los días')
           ? [day]
           : [...prev, day];
       }
