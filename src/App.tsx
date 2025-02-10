@@ -18,20 +18,20 @@ import { supabase } from './lib/supabase';
 import { reportService } from './lib/reportService';
 import { FlagButton } from './components/FlagButton';
 import { ReportErrorModal, type ReportErrorData } from './components/ReportErrorModal';
-import type { Discount, FuelBrand } from './types';
+import type { Discount } from './types';
 import { Toast } from './components/Toast';
 
-type SortField = 'discount' | 'reimbursement_limit' | 'fuel_brand' | 'day' | null;
-type SortDirection = 'asc' | 'desc';
+type CampoOrdenamiento = 'descuento' | 'limite_reintegro' | 'marca_combustible' | 'dia' | null;
+type DireccionOrdenamiento = 'asc' | 'desc';
 
-interface RecommendFormData {
-  fuel_brand: string[];
-  day: string[];
-  card_method: string;
-  discount: string;
-  reimbursement_limit: string;
-  frequency: string;
-  source_url: string;
+interface DatosFormularioRecomendacion {
+  marca_combustible: string[];
+  dia: string[];
+  metodo_pago: string;
+  descuento: string;
+  limite_reintegro: string;
+  frecuencia: string;
+  url_fuente: string;
 }
 
 function App() {
@@ -43,25 +43,25 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [dayDropdownOpen, setDayDropdownOpen] = useState(false);
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortField, setSortField] = useState<CampoOrdenamiento>(null);
+  const [sortDirection, setSortDirection] = useState<DireccionOrdenamiento>('desc');
   const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isRecommendButtonDisabled, setIsRecommendButtonDisabled] = useState(false);
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(0);
-  const [recommendFormData, setRecommendFormData] = useState<RecommendFormData>({
-    fuel_brand: [],
-    day: [],
-    card_method: '',
-    discount: '',
-    reimbursement_limit: '',
-    frequency: '',
-    source_url: ''
+  const [recommendFormData, setRecommendFormData] = useState<DatosFormularioRecomendacion>({
+    marca_combustible: [],
+    dia: [],
+    metodo_pago: '',
+    descuento: '',
+    limite_reintegro: '',
+    frecuencia: '',
+    url_fuente: ''
   });
   const [selectedDiscountForReport, setSelectedDiscountForReport] = useState<Discount | null>(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [toast, setToast] = useState<{ mensaje: string; tipo: 'exito' | 'error' | 'info' } | null>(null);
 
   const brandDropdownRef = useRef<HTMLDivElement>(null);
   const dayDropdownRef = useRef<HTMLDivElement>(null);
@@ -145,7 +145,7 @@ function App() {
   const handleDiscountChange = (value: string) => {
     const numericValue = value.replace(/[^0-9]/g, '');
     if (numericValue === '' || parseInt(numericValue) <= 100) {
-      setRecommendFormData(prev => ({ ...prev, discount: numericValue }));
+      setRecommendFormData(prev => ({ ...prev, descuento: numericValue }));
     }
   };
 
@@ -154,7 +154,7 @@ function App() {
     const numericValue = value.replace(/[^0-9]/g, '');
     // Format with thousand separators
     const formattedValue = numericValue ? parseInt(numericValue).toLocaleString() : '';
-    setRecommendFormData(prev => ({ ...prev, reimbursement_limit: formattedValue }));
+    setRecommendFormData(prev => ({ ...prev, limite_reintegro: formattedValue }));
   };
 
   const formatNumber = (value: string) => {
@@ -163,21 +163,21 @@ function App() {
 
   const toggleRecommendDay = (day: string) => {
     setRecommendFormData(prev => {
-      const newDays = prev.day.includes(day)
-        ? prev.day.filter((d: string) => d !== day)
-        : [...prev.day, day];
+      const newDays = prev.dia.includes(day)
+        ? prev.dia.filter((d: string) => d !== day)
+        : [...prev.dia, day];
       
       // If "Todos los días" is selected, clear other selections
       if (day === 'Todos los días') {
-        return { ...prev, day: newDays.includes('Todos los días') ? ['Todos los días'] : [] };
+        return { ...prev, dia: newDays.includes('Todos los días') ? ['Todos los días'] : [] };
       }
       
       // If another day is selected and "Todos los días" was previously selected, remove it
-      if (prev.day.includes('Todos los días')) {
-        return { ...prev, day: [day] };
+      if (prev.dia.includes('Todos los días')) {
+        return { ...prev, dia: [day] };
       }
       
-      return { ...prev, day: newDays };
+      return { ...prev, dia: newDays };
     });
   };
 
@@ -212,16 +212,16 @@ function App() {
 
       // Apply brand filter
       if (selectedBrands.length > 0) {
-        query = query.in('fuel_brand', selectedBrands);
+        query = query.in('marca_combustible', selectedBrands);
       }
 
       // Apply day filter
       if (selectedDays.length > 0) {
         const dayConditions = selectedDays.map(day => {
           if (day === 'Todos los días') {
-            return `day.ilike.%${day}%`;
+            return `dia.ilike.%${day}%`;
           }
-          return `day.ilike.%${day}%`;
+          return `dia.ilike.%${day}%`;
         });
         query = query.or(dayConditions.join(','));
       }
@@ -233,18 +233,18 @@ function App() {
         if (searchTerm.length <= 100 && /^[\w\s]*$/.test(searchTerm)) {
           // Create a search filter that looks in all relevant fields
           query = query.or(
-            `card_method.ilike.%${searchTerm}%,` +
-            `frequency.ilike.%${searchTerm}%`
+            `metodo_pago.ilike.%${searchTerm}%,` +
+            `frecuencia.ilike.%${searchTerm}%`
           );
           
-          // If no brand filter is active, also search in fuel_brand
+          // If no brand filter is active, also search in marca_combustible
           if (selectedBrands.length === 0) {
-            query = query.or(`fuel_brand.ilike.%${searchTerm}%`);
+            query = query.or(`marca_combustible.ilike.%${searchTerm}%`);
           }
           
-          // If no day filter is active, also search in day
+          // If no day filter is active, also search in dia
           if (selectedDays.length === 0) {
-            query = query.or(`day.ilike.%${searchTerm}%`);
+            query = query.or(`dia.ilike.%${searchTerm}%`);
           }
         } else {
           throw new Error('Invalid search input. Please use only letters, numbers, and spaces.');
@@ -271,7 +271,7 @@ function App() {
     }
   }
 
-  const handleSort = (field: SortField) => {
+  const handleSort = (field: CampoOrdenamiento) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
@@ -280,7 +280,7 @@ function App() {
     }
   };
 
-  const getSortIcon = (field: SortField) => {
+  const getSortIcon = (field: CampoOrdenamiento) => {
     if (sortField !== field) {
       return <ArrowUpDown className="h-4 w-4 text-gray-400" />;
     }
@@ -396,8 +396,8 @@ function App() {
   const handleRecommendSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (recommendFormData.fuel_brand.length === 0 || !recommendFormData.card_method || !recommendFormData.discount || recommendFormData.day.length === 0) {
-      setToast({ message: 'Please fill in all required fields and select at least one day', type: 'error' });
+    if (recommendFormData.marca_combustible.length === 0 || !recommendFormData.metodo_pago || !recommendFormData.descuento || recommendFormData.dia.length === 0) {
+      setToast({ mensaje: 'Por favor complete todos los campos requeridos y seleccione al menos un día', tipo: 'error' });
       return;
     }
 
@@ -408,41 +408,41 @@ function App() {
       const { data, error } = await supabase
         .from('recommended_discounts')
         .insert({
-          fuel_brand: recommendFormData.fuel_brand[0], // Taking first selected brand
-          days: recommendFormData.day,
-          payment_method: recommendFormData.card_method,
-          discount_percentage: parseInt(recommendFormData.discount),
-          reimbursement_limit: parseInt(recommendFormData.reimbursement_limit.replace(/,/g, '')),
-          frequency: recommendFormData.frequency,
-          source_url: recommendFormData.source_url || null,
+          marca_combustible: recommendFormData.marca_combustible[0], // Taking first selected brand
+          dias: recommendFormData.dia,
+          metodo_pago: recommendFormData.metodo_pago,
+          descuento_porcentaje: parseInt(recommendFormData.descuento),
+          limite_reintegro: parseInt(recommendFormData.limite_reintegro.replace(/,/g, '')),
+          frecuencia: recommendFormData.frecuencia,
+          url_fuente: recommendFormData.url_fuente || null,
           status: 'pending'
         })
         .select();
 
       if (error) {
         console.error('Supabase error:', error);
-        setToast({ message: `Error submitting recommendation: ${error.message}`, type: 'error' });
+        setToast({ mensaje: `Error al enviar la recomendación: ${error.message}`, tipo: 'error' });
         throw error;
       }
 
-      setToast({ message: 'Discount recommended successfully!', type: 'success' });
+      setToast({ mensaje: '¡Recomendación enviada exitosamente!', tipo: 'exito' });
       setIsRecommendModalOpen(false);
       setRecommendFormData({
-        fuel_brand: [],
-        day: [],
-        card_method: '',
-        discount: '',
-        reimbursement_limit: '',
-        frequency: '',
-        source_url: ''
+        marca_combustible: [],
+        dia: [],
+        metodo_pago: '',
+        descuento: '',
+        limite_reintegro: '',
+        frecuencia: '',
+        url_fuente: ''
       });
       startCooldown();
     } catch (error) {
       console.error('Error submitting recommendation:', error);
       if (error instanceof Error) {
-        setToast({ message: `Error: ${error.message}`, type: 'error' });
+        setToast({ mensaje: `Error: ${error.message}`, tipo: 'error' });
       } else {
-        setToast({ message: 'An unexpected error occurred while submitting the recommendation', type: 'error' });
+        setToast({ mensaje: 'Ocurrió un error inesperado al enviar la recomendación', tipo: 'error' });
       }
     } finally {
       setIsRecommendButtonDisabled(false);
@@ -451,10 +451,10 @@ function App() {
 
   const toggleRecommendBrand = (brand: string) => {
     setRecommendFormData(prev => {
-      const newBrands = prev.fuel_brand.includes(brand)
-        ? prev.fuel_brand.filter(b => b !== brand)
-        : [...prev.fuel_brand, brand];
-      return { ...prev, fuel_brand: newBrands };
+      const newBrands = prev.marca_combustible.includes(brand)
+        ? prev.marca_combustible.filter(b => b !== brand)
+        : [...prev.marca_combustible, brand];
+      return { ...prev, marca_combustible: newBrands };
     });
   };
 
@@ -505,17 +505,11 @@ function App() {
   // Add handler for report submission
   const handleReportSubmit = async (data: ReportErrorData) => {
     try {
-      await reportService.submitReport(data);
-      setIsReportModalOpen(false);
-      setSelectedDiscountForReport(null);
-      setToast({ message: 'Error report submitted successfully!', type: 'success' });
-    } catch (error) {
-      if (error instanceof Error) {
-        setToast({ message: error.message, type: 'error' });
-      } else {
-        setToast({ message: 'An unexpected error occurred', type: 'error' });
-      }
-      throw error;
+      await reportService.enviarReporte(data);
+      setToast({ mensaje: 'Reporte enviado exitosamente', tipo: 'exito' });
+    } catch (err) {
+      console.error('Error al enviar el reporte:', err);
+      setToast({ mensaje: 'Error al enviar el reporte', tipo: 'error' });
     }
   };
 
@@ -779,42 +773,46 @@ function App() {
                     <tr>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('fuel_brand')}
+                        onClick={() => handleSort('marca_combustible')}
                       >
                         <div className="flex items-center gap-1">
-                          Brand
-                          {getSortIcon('fuel_brand')}
+                          Marca
+                          {getSortIcon('marca_combustible')}
                         </div>
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('day')}
+                        onClick={() => handleSort('dia')}
                       >
                         <div className="flex items-center gap-1">
-                          Day
-                          {getSortIcon('day')}
+                          Día
+                          {getSortIcon('dia')}
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('discount')}
-                      >
-                        <div className="flex items-center gap-1">
-                          Discount
-                          {getSortIcon('discount')}
-                        </div>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Método de Pago
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('reimbursement_limit')}
+                        onClick={() => handleSort('descuento')}
                       >
                         <div className="flex items-center gap-1">
-                          Reimburse Limit
-                          {getSortIcon('reimbursement_limit')}
+                          Descuento
+                          {getSortIcon('descuento')}
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('limite_reintegro')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Límite de Reintegro
+                          {getSortIcon('limite_reintegro')}
+                        </div>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Frecuencia
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -822,20 +820,20 @@ function App() {
                       <tr key={discount.id} className="hover:bg-gray-50 transition-colors duration-150">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-gray-900">
-                            {getBrandIcon(discount.fuel_brand)}
-                            {discount.fuel_brand}
+                            {getBrandIcon(discount.marca_combustible)}
+                            {discount.marca_combustible}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{discount.day}</span>
+                          <span className="text-sm text-gray-500">{discount.dia}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-gray-500">{discount.card_method}</span>
+                          <span className="text-sm text-gray-500">{discount.metodo_pago}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(discount.discount)}`}>
-                              {discount.discount}%
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getDiscountBadgeStyle(discount.descuento)}`}>
+                              {discount.descuento}%
                             </span>
                             <FlagButton
                               onClick={() => {
@@ -846,12 +844,12 @@ function App() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.reimbursement_limit)}`}>
-                            ${discount.reimbursement_limit.toLocaleString()}
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.limite_reintegro)}`}>
+                            ${discount.limite_reintegro.toLocaleString()}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-500">{discount.frequency}</span>
+                          <span className="text-sm text-gray-500">{discount.frecuencia}</span>
                         </td>
                       </tr>
                     ))}
@@ -866,18 +864,18 @@ function App() {
                   key={discount.id}
                   className="bg-white rounded-lg shadow-sm transform transition-all duration-200 hover:shadow-md relative"
                 >
-                  <div className={`bg-gradient-to-r ${getBrandColor(discount.fuel_brand)} p-4 overflow-visible`}>
+                  <div className={`bg-gradient-to-r ${getBrandColor(discount.marca_combustible)} p-4 overflow-visible`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-bold text-gray-900">
-                          {getBrandIcon(discount.fuel_brand)}
-                          {discount.fuel_brand}
+                          {getBrandIcon(discount.marca_combustible)}
+                          {discount.marca_combustible}
                         </h3>
-                        <p className="text-gray-700 text-sm mt-1">{discount.day}</p>
+                        <p className="text-gray-700 text-sm mt-1">{discount.dia}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.discount)}`}>
-                          <span className="text-lg font-bold">{discount.discount}%</span>
+                        <div className={`flex items-center rounded-lg px-3 py-1.5 ${getDiscountBadgeStyle(discount.descuento)}`}>
+                          <span className="text-lg font-bold">{discount.descuento}%</span>
                         </div>
                         <FlagButton
                           onClick={() => {
@@ -894,7 +892,7 @@ function App() {
                       <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Payment Method</p>
-                        <p className="text-sm text-gray-600">{discount.card_method}</p>
+                        <p className="text-sm text-gray-600">{discount.metodo_pago}</p>
                       </div>
                     </div>
 
@@ -902,8 +900,8 @@ function App() {
                       <DollarSign className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Reimburse Limit</p>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.reimbursement_limit)}`}>
-                          ${discount.reimbursement_limit.toLocaleString()}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(discount.limite_reintegro)}`}>
+                          ${discount.limite_reintegro.toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -912,7 +910,7 @@ function App() {
                       <Clock className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">Frequency</p>
-                        <p className="text-sm text-gray-600">{discount.frequency}</p>
+                        <p className="text-sm text-gray-600">{discount.frecuencia}</p>
                       </div>
                     </div>
                   </div>
@@ -960,9 +958,9 @@ function App() {
                       className="mt-1 relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
                       <span className="block truncate">
-                        {recommendFormData.fuel_brand.length === 0 
-                          ? 'Select brands' 
-                          : recommendFormData.fuel_brand.join(', ')}
+                        {recommendFormData.marca_combustible.length === 0 
+                          ? 'Seleccionar marcas' 
+                          : recommendFormData.marca_combustible.join(', ')}
                       </span>
                       <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                         <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -974,13 +972,13 @@ function App() {
                         <div className="p-2">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-sm font-medium text-gray-700">Select Brands</span>
-                            {recommendFormData.fuel_brand.length > 0 && (
+                            {recommendFormData.marca_combustible.length > 0 && (
                               <button
                                 type="button"
-                                onClick={() => setRecommendFormData(prev => ({ ...prev, fuel_brand: [] }))}
+                                onClick={() => setRecommendFormData(prev => ({ ...prev, marca_combustible: [] }))}
                                 className="text-xs text-gray-500 hover:text-gray-700"
                               >
-                                Clear all
+                                Limpiar selección
                               </button>
                             )}
                           </div>
@@ -988,7 +986,7 @@ function App() {
                             <label key={brand} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={recommendFormData.fuel_brand.includes(brand)}
+                                checked={recommendFormData.marca_combustible.includes(brand)}
                                 onChange={() => toggleRecommendBrand(brand)}
                                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                               />
@@ -1015,9 +1013,9 @@ function App() {
                       className="mt-1 relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
                       <span className="block truncate">
-                        {recommendFormData.day.length === 0 
-                          ? 'Select days' 
-                          : recommendFormData.day.map(day => getAbbreviatedDay(day)).join(', ')}
+                        {recommendFormData.dia.length === 0 
+                          ? 'Seleccionar días' 
+                          : recommendFormData.dia.map(day => getAbbreviatedDay(day)).join(', ')}
                       </span>
                       <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                         <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -1029,13 +1027,13 @@ function App() {
                         <div className="p-2">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-sm font-medium text-gray-700">Select Days</span>
-                            {recommendFormData.day.length > 0 && (
+                            {recommendFormData.dia.length > 0 && (
                               <button
                                 type="button"
-                                onClick={() => setRecommendFormData(prev => ({ ...prev, day: [] }))}
+                                onClick={() => setRecommendFormData(prev => ({ ...prev, dia: [] }))}
                                 className="text-xs text-gray-500 hover:text-gray-700"
                               >
-                                Clear all
+                                Limpiar selección
                               </button>
                             )}
                           </div>
@@ -1043,7 +1041,7 @@ function App() {
                             <label key={day} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={recommendFormData.day.includes(day)}
+                                checked={recommendFormData.dia.includes(day)}
                                 onChange={() => toggleRecommendDay(day)}
                                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                               />
@@ -1062,8 +1060,8 @@ function App() {
                   </label>
                   <input
                     type="text"
-                    value={recommendFormData.card_method}
-                    onChange={(e) => setRecommendFormData(prev => ({ ...prev, card_method: e.target.value }))}
+                    value={recommendFormData.metodo_pago}
+                    onChange={(e) => setRecommendFormData(prev => ({ ...prev, metodo_pago: e.target.value }))}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Visa / Mastercard / Modo"
                   />
@@ -1076,7 +1074,7 @@ function App() {
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <input
                       type="text"
-                      value={recommendFormData.discount}
+                      value={recommendFormData.descuento}
                       onChange={(e) => handleDiscountChange(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="Enter discount percentage"
@@ -1097,7 +1095,7 @@ function App() {
                     </div>
                     <input
                       type="text"
-                      value={recommendFormData.reimbursement_limit}
+                      value={recommendFormData.limite_reintegro}
                       onChange={(e) => handleReimbursementLimitChange(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       placeholder="Enter reimbursement limit"
@@ -1110,8 +1108,8 @@ function App() {
                     Frequency *
                   </label>
                   <select
-                    value={recommendFormData.frequency}
-                    onChange={(e) => setRecommendFormData(prev => ({ ...prev, frequency: e.target.value }))}
+                    value={recommendFormData.frecuencia}
+                    onChange={(e) => setRecommendFormData(prev => ({ ...prev, frecuencia: e.target.value }))}
                     className="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                   >
                     <option value="">Select frequency</option>
@@ -1131,8 +1129,8 @@ function App() {
                       </div>
                       <input
                         type="text"
-                        value={recommendFormData.source_url}
-                        onChange={(e) => setRecommendFormData(prev => ({ ...prev, source_url: e.target.value }))}
+                        value={recommendFormData.url_fuente}
+                        onChange={(e) => setRecommendFormData(prev => ({ ...prev, url_fuente: e.target.value }))}
                         className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                         placeholder="https://example.com"
                       />
@@ -1173,8 +1171,8 @@ function App() {
       {/* Add Toast */}
       {toast && (
         <Toast
-          message={toast.message}
-          type={toast.type}
+          mensaje={toast.mensaje}
+          tipo={toast.tipo}
           onClose={() => setToast(null)}
         />
       )}
