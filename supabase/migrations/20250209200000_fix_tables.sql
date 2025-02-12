@@ -35,6 +35,11 @@ CREATE POLICY "Permitir ver recomendaciones"
   TO public
   USING (true);
 
+-- Update estado check constraint
+ALTER TABLE descuentos_recomendados DROP CONSTRAINT IF EXISTS recommended_discounts_status_check;
+ALTER TABLE descuentos_recomendados ADD CONSTRAINT descuentos_recomendados_estado_check 
+  CHECK (estado IN ('pendiente', 'aprobado', 'rechazado'));
+
 -- Rename and update recommended_discounts table
 ALTER TABLE IF EXISTS recommended_discounts RENAME TO descuentos_recomendados;
 
@@ -48,9 +53,4 @@ ALTER TABLE descuentos_recomendados RENAME COLUMN frequency TO frecuencia;
 ALTER TABLE descuentos_recomendados RENAME COLUMN source_url TO url_fuente;
 ALTER TABLE descuentos_recomendados RENAME COLUMN status TO estado;
 ALTER TABLE descuentos_recomendados RENAME COLUMN created_at TO creado_el;
-ALTER TABLE descuentos_recomendados RENAME COLUMN updated_at TO actualizado_el;
-
--- Update estado check constraint
-ALTER TABLE descuentos_recomendados DROP CONSTRAINT IF EXISTS recommended_discounts_status_check;
-ALTER TABLE descuentos_recomendados ADD CONSTRAINT descuentos_recomendados_estado_check 
-  CHECK (estado IN ('pendiente', 'aprobado', 'rechazado')); 
+ALTER TABLE descuentos_recomendados RENAME COLUMN updated_at TO actualizado_el; 

@@ -29,8 +29,20 @@ interface DatosFormularioRecomendacion {
   metodo_pago: string;
   descuento: string;
   limite_reintegro: string;
+  sin_limite_reintegro: boolean;
   frecuencia: string;
   url_fuente: string;
+}
+
+interface RecommendedDiscountInsert {
+  fuel_brand?: string;
+  days?: string[];
+  payment_method?: string;
+  discount_percentage?: number;
+  reimbursement_limit?: number | null;
+  frequency?: string;
+  source_url?: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 function App() {
@@ -55,6 +67,7 @@ function App() {
     metodo_pago: '',
     descuento: '',
     limite_reintegro: '',
+    sin_limite_reintegro: false,
     frecuencia: '',
     url_fuente: ''
   });
@@ -154,9 +167,11 @@ function App() {
 
   const handleReimbursementLimitChange = (value: string) => {
     // Remove all non-numeric characters
-    const numericValue = value.replace(/[^0-9]/g, '');
+    const numericValue = value.replace(/[^\d]/g, '');
+    // Limit to 1,000,000
+    const limitedValue = numericValue ? Math.min(parseInt(numericValue), 1000000).toString() : '';
     // Format with thousand separators if there's a value
-    const formattedValue = numericValue ? parseInt(numericValue).toLocaleString('es-AR') : '';
+    const formattedValue = limitedValue ? Number(limitedValue).toLocaleString('es-AR').replace(/\./g, ',') : '';
     setRecommendFormData(prev => ({ ...prev, limite_reintegro: formattedValue }));
   };
 
@@ -226,18 +241,20 @@ function App() {
       if (searchQuery.trim()) {
         const searchTerm = searchQuery.toLowerCase().trim();
         if (searchTerm.length <= 100 && /^[\w\s]*$/.test(searchTerm)) {
-          query = query.or(
-            `metodo_pago.ilike.%${searchTerm}%,` +
+          const conditions = [
+            `metodo_pago.ilike.%${searchTerm}%`,
             `frecuencia.ilike.%${searchTerm}%`
-          );
+          ];
           
           if (selectedBrands.length === 0) {
-            query = query.or(`marca_combustible.ilike.%${searchTerm}%`);
+            conditions.push(`marca_combustible.ilike.%${searchTerm}%`);
           }
           
           if (selectedDays.length === 0) {
-            query = query.or(`dia.ilike.%${searchTerm}%`);
+            conditions.push(`dia.ilike.%${searchTerm}%`);
           }
+          
+          query = query.or(conditions.join(','));
         } else {
           throw new Error('Búsqueda inválida. Por favor use solo letras, números y espacios.');
         }
@@ -387,26 +404,53 @@ function App() {
   const handleRecommendSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (recommendFormData.marca_combustible.length === 0 || !recommendFormData.metodo_pago || !recommendFormData.descuento || recommendFormData.dia.length === 0) {
-      setToast({ mensaje: 'Por favor complete todos los campos requeridos y seleccione al menos un día', tipo: 'error' });
+    if (recommendFormData.marca_combustible.length === 0) {
+      setToast({ mensaje: 'La marca de combustible es obligatoria', tipo: 'error' });
+      return;
+    }
+    if (recommendFormData.dia.length === 0) {
+      setToast({ mensaje: 'Debe seleccionar al menos un día', tipo: 'error' });
+      return;
+    }
+    if (!recommendFormData.metodo_pago.trim()) {
+      setToast({ mensaje: 'El método de pago es obligatorio', tipo: 'error' });
+      return;
+    }
+    if (!recommendFormData.descuento.trim()) {
+      setToast({ mensaje: 'El descuento es obligatorio', tipo: 'error' });
+      return;
+    }
+    if (!recommendFormData.limite_reintegro.trim() && !recommendFormData.sin_limite_reintegro) {
+      setToast({ mensaje: 'El límite de reintegro es obligatorio', tipo: 'error' });
+      return;
+    }
+    if (!recommendFormData.frecuencia.trim()) {
+      setToast({ mensaje: 'La frecuencia es obligatoria', tipo: 'error' });
       return;
     }
 
     setIsRecommendButtonDisabled(true);
 
     try {
+      // Prepare the data with required fields
+      const insertData: RecommendedDiscountInsert = {
+        status: 'pending',
+        fuel_brand: recommendFormData.marca_combustible[0],
+        days: recommendFormData.dia,
+        payment_method: recommendFormData.metodo_pago.trim(),
+        discount_percentage: parseInt(recommendFormData.descuento),
+        reimbursement_limit: recommendFormData.sin_limite_reintegro ? null : parseInt(recommendFormData.limite_reintegro.replace(/,/g, '')),
+        frequency: recommendFormData.frecuencia.trim()
+      };
+      
+      // Add optional URL if provided
+      if (recommendFormData.url_fuente.trim()) {
+        insertData.source_url = recommendFormData.url_fuente.trim();
+      }
+
       const { error: supabaseError } = await supabase
-        .from('descuentos_recomendados')
-        .insert({
-          marca_combustible: recommendFormData.marca_combustible[0],
-          dias: recommendFormData.dia,
-          metodo_pago: recommendFormData.metodo_pago,
-          porcentaje_descuento: parseInt(recommendFormData.descuento),
-          limite_reintegro: parseInt(recommendFormData.limite_reintegro.replace(/,/g, '')),
-          frecuencia: recommendFormData.frecuencia,
-          url_fuente: recommendFormData.url_fuente || null,
-          estado: 'pendiente'
-        })
+        .from('recommended_discounts')
+        .insert(insertData)
         .select();
 
       if (supabaseError) {
@@ -423,6 +467,7 @@ function App() {
         metodo_pago: '',
         descuento: '',
         limite_reintegro: '',
+        sin_limite_reintegro: false,
         frecuencia: '',
         url_fuente: ''
       });
@@ -547,7 +592,7 @@ function App() {
         <div className="mb-6">
           {/* Mobile layout */}
           <div className="sm:hidden mb-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2">
+            <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-2 transition-opacity duration-200 ${showSearch ? 'opacity-100' : 'opacity-0'}`}>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
@@ -843,7 +888,7 @@ function App() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getReimburseLimitStyle(descuento.limite_reintegro)}`}>
-                            ${descuento.limite_reintegro.toLocaleString()}
+                            ${descuento.limite_reintegro.toLocaleString('es-AR').replace(/\./g, ',')}
                           </span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -899,7 +944,7 @@ function App() {
                       <div>
                         <p className="text-sm font-medium text-gray-900">Límite de Reintegro</p>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getReimburseLimitStyle(descuento.limite_reintegro)}`}>
-                          ${descuento.limite_reintegro.toLocaleString()}
+                          ${descuento.limite_reintegro.toLocaleString('es-AR').replace(/\./g, ',')}
                         </span>
                       </div>
                     </div>
@@ -947,7 +992,7 @@ function App() {
               <form onSubmit={handleRecommendSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Marca de Combustible *
+                    Marca de Combustible <span className="text-red-500">*</span>
                   </label>
                   <div className="relative" ref={recommendBrandDropdownRef}>
                     <button
@@ -1002,7 +1047,7 @@ function App() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Días *
+                    Días <span className="text-red-500">*</span>
                   </label>
                   <div className="relative" ref={recommendDayDropdownRef}>
                     <button
@@ -1054,7 +1099,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Método de Pago *
+                    Método de Pago <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1067,7 +1112,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Porcentaje de Descuento *
+                    Porcentaje de Descuento <span className="text-red-500">*</span>
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <input
@@ -1085,7 +1130,7 @@ function App() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Límite de Reintegro *
+                    Límite de Reintegro <span className="text-red-500">*</span>
                   </label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1095,15 +1140,35 @@ function App() {
                       type="text"
                       value={recommendFormData.limite_reintegro}
                       onChange={(e) => handleReimbursementLimitChange(e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="Ingrese el límite"
+                      disabled={recommendFormData.sin_limite_reintegro}
+                      className={`block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-7 pr-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+                        recommendFormData.sin_limite_reintegro ? 'bg-gray-100 text-gray-500' : ''
+                      }`}
+                      placeholder="Ej: 5,000 (máx: 1,000,000)"
                     />
+                  </div>
+                  <div className="mt-2">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={recommendFormData.sin_limite_reintegro}
+                        onChange={(e) => {
+                          setRecommendFormData(prev => ({
+                            ...prev,
+                            sin_limite_reintegro: e.target.checked,
+                            limite_reintegro: e.target.checked ? '' : prev.limite_reintegro
+                          }));
+                        }}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-600">Sin límite de reintegro</span>
+                    </label>
                   </div>
                 </div>
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Frecuencia *
+                    Frecuencia <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={recommendFormData.frecuencia}
